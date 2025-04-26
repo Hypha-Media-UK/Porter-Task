@@ -1,0 +1,47 @@
+{
+  "supervisors": [
+    "Chris Crombie",
+    "Luke Clements",
+    "Martin Smith",
+    "Martin Fearon"
+  ],
+  "porters": [
+    "Porter 1",
+    "Porter 2",
+    "Porter 3",
+    "Porter 4",
+    "Porter 5",
+    "Porter 6",
+    "Porter 7",
+    "Porter 8",
+    "Porter 9",
+    "Porter 10"
+  ],
+  "jobCategories": {
+    "Patient Transfer": [
+      "Wheelchair",
+      "Stretcher",
+      "Bed"
+    ],
+    "Specimen Delivery": [
+      "Blood Sample",
+      "Urine Sample"
+    ],
+    "Asset Movement": [
+      "Bed (Complete)",
+      "Bed Frame",
+      "Incubator"
+    ],
+    "Gases": [
+      "D - Oxygen",
+      "E - Oxygen",
+      "F - Oxygen",
+      "D - CO2",
+      "F - CO2"
+    ],
+    "Adhoc": [
+      "Documents"
+    ]
+  },
+  "jobCategoryDefaults": []
+}

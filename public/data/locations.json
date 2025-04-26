@@ -1,0 +1,283 @@
+{
+  "buildings": [
+    {
+      "id": "main",
+      "name": "Hartshead Building",
+      "departments": [
+        {
+          "id": "amu",
+          "name": "AMU"
+        },
+        {
+          "id": "iau",
+          "name": "IAU"
+        },
+        {
+          "id": "itu",
+          "name": "ITU"
+        },
+        {
+          "id": "acu",
+          "name": "ACU"
+        },
+        {
+          "id": "north-theatres",
+          "name": "North Theatres"
+        },
+        {
+          "id": "south-theatres",
+          "name": "South Theatres"
+        },
+        {
+          "id": "dseu-(day-surgery)",
+          "name": "DSEU (Day Surgery)"
+        },
+        {
+          "id": "childrens-unit",
+          "name": "Childrens Unit"
+        },
+        {
+          "id": "childrens-o+a",
+          "name": "Childrens O+A"
+        },
+        {
+          "id": "childrens-outpatients",
+          "name": "Childrens Outpatients"
+        },
+        {
+          "id": "pharmacy",
+          "name": "Pharmacy"
+        },
+        {
+          "id": "gf-xray",
+          "name": "GF Xray"
+        },
+        {
+          "id": "ultrasound",
+          "name": "Ultrasound"
+        },
+        {
+          "id": "clinics-a---f",
+          "name": "Clinics A - F"
+        },
+        {
+          "id": "cri-clinic",
+          "name": "CRI Clinic"
+        },
+        {
+          "id": "swan-room",
+          "name": "Swan Room"
+        },
+        {
+          "id": "day-surgery",
+          "name": "Surgical Hub"
+        },
+        {
+          "id": "vascular-studies",
+          "name": "Vascular Studies"
+        },
+        {
+          "id": "plaster-room",
+          "name": "Plaster Room"
+        },
+        {
+          "id": "clinics-1---9-(blue-suite)",
+          "name": "Clinics 1 - 9 (Blue Suite)"
+        },
+        {
+          "id": "yellow-suite",
+          "name": "Yellow Suite"
+        },
+        {
+          "id": "isgu",
+          "name": "ISGU"
+        },
+        {
+          "id": "north-reception",
+          "name": "North Reception"
+        },
+        {
+          "id": "south-reception",
+          "name": "South Reception"
+        },
+        {
+          "id": "sdec",
+          "name": "SDEC"
+        },
+        {
+          "id": "frailty",
+          "name": "Frailty"
+        },
+        {
+          "id": "bed-store",
+          "name": "Bed Store"
+        }
+      ],
+      "wards": []
+    },
+    {
+      "id": "east",
+      "name": "Charlesworth Building",
+      "departments": [
+        {
+          "id": "physio",
+          "name": "Ward 31"
+        },
+        {
+          "id": "oncology",
+          "name": "Ward 30 (HCU)"
+        },
+        {
+          "id": "imaging",
+          "name": "Ward 27"
+        },
+        {
+          "id": "labour-ward",
+          "name": "Labour Ward"
+        },
+        {
+          "id": "womens-health-unit",
+          "name": "Womens Health Unit"
+        },
+        {
+          "id": "nicu",
+          "name": "NICU"
+        }
+      ],
+      "wards": [
+        {
+          "id": "eastward1",
+          "name": "Acorn Birth Center"
+        },
+        {
+          "id": "eastward2",
+          "name": "CCS"
+        },
+        {
+          "id": "eastward3",
+          "name": "Maternity Triage"
+        }
+      ]
+    },
+    {
+      "id": "north",
+      "name": "Ladysmith Building",
+      "departments": [
+        {
+          "id": "admin",
+          "name": "Ward 41"
+        },
+        {
+          "id": "records",
+          "name": "Ward 42"
+        },
+        {
+          "id": "cafe",
+          "name": "Ward 43"
+        },
+        {
+          "id": "ward-44",
+          "name": "Ward 44"
+        },
+        {
+          "id": "ward-45",
+          "name": "Ward 45"
+        },
+        {
+          "id": "ward-46",
+          "name": "Ward 46"
+        }
+      ],
+      "wards": []
+    },
+    {
+      "id": "macmillan-unit",
+      "name": "Macmillan Unit",
+      "departments": [
+        {
+          "id": "macmillan",
+          "name": "Macmillan"
+        }
+      ],
+      "wards": []
+    },
+    {
+      "id": "new-fountain-house",
+      "name": "New Fountain House",
+      "departments": [
+        {
+          "id": "pathology",
+          "name": "Pathology"
+        },
+        {
+          "id": "infection-control",
+          "name": "Infection Control"
+        }
+      ],
+      "wards": []
+    },
+    {
+      "id": "bereavement-center",
+      "name": "Bereavement Center",
+      "departments": [
+        {
+          "id": "rose-cotage",
+          "name": "Rose Cottage"
+        }
+      ],
+      "wards": []
+    },
+    {
+      "id": "buckton-building",
+      "name": "Buckton Building",
+      "departments": [
+        {
+          "id": "taylor-ward",
+          "name": "Taylor Ward"
+        },
+        {
+          "id": "hague-ward",
+          "name": "Hague Ward"
+        }
+      ],
+      "wards": []
+    },
+    {
+      "id": "etherow-building",
+      "name": "Etherow Building",
+      "departments": [],
+      "wards": []
+    },
+    {
+      "id": "renal-unit",
+      "name": "Renal Unit",
+      "departments": [],
+      "wards": []
+    },
+    {
+      "id": "main-stores",
+      "name": "Main Stores",
+      "departments": [],
+      "wards": []
+    },
+    {
+      "id": "porters-lodge",
+      "name": "Portland House",
+      "departments": [
+        {
+          "id": "laundr",
+          "name": "Laundry"
+        },
+        {
+          "id": "porters-lodge",
+          "name": "Porters Lodge"
+        },
+        {
+          "id": "i.t.",
+          "name": "I.T."
+        }
+      ],
+      "wards": []
+    }
+  ]
+}
