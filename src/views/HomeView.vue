@@ -305,6 +305,9 @@ const startSpecificShift = (type: 'Day' | 'Night') => {
 const endCurrentShift = () => {
   endShift()
   showEndShiftConfirm.value = false
+  
+  // Force UI refresh by navigating back to home
+  if (navigate) navigate('home')
 }
 
 const viewShiftDetails = (shiftId: string) => {
