@@ -35,47 +35,7 @@
       </div>
     </div>
     
-    <div class="section-header">
-      <h2>Task Categories</h2>
-    </div>
-    
-    <div class="category-grid">
-      <div 
-        class="category-card pending"
-        :class="{ active: pendingTasks.length > 0 }"
-        @click="navigateToPendingTasks"
-      >
-        <div class="category-badge">{{ pendingTasks.length }}</div>
-        <div class="category-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
-        </div>
-        <div class="category-title">Pending Tasks</div>
-        <div class="category-description">
-          Tasks waiting to be completed
-        </div>
-      </div>
-      
-      <div 
-        class="category-card completed"
-        :class="{ active: completedTasks.length > 0 }"
-        @click="navigateToCompletedTasks"
-      >
-        <div class="category-badge">{{ completedTasks.length }}</div>
-        <div class="category-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-          </svg>
-        </div>
-        <div class="category-title">Completed Tasks</div>
-        <div class="category-description">
-          Tasks that have been finished
-        </div>
-      </div>
-    </div>
+    <!-- Task Category Cards removed as they're redundant with the task summary card -->
     
     <div v-if="pendingTasks.length > 0" class="recent-task-section">
       <div class="section-header">
@@ -282,6 +242,7 @@ h3 {
 .task-stats {
   display: flex;
   padding: var(--spacing-md);
+  gap: var(--spacing-md);
 }
 
 .stat-item {
@@ -289,34 +250,33 @@ h3 {
   flex-direction: column;
   align-items: center;
   flex: 1;
-  position: relative;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-lg);
+  transition: background-color 0.2s ease;
   cursor: pointer;
+  position: relative;
 }
 
-.stat-item:after {
-  content: "";
-  position: absolute;
-  right: 0;
-  top: 10%;
-  height: 80%;
-  width: 1px;
-  background-color: var(--color-border-light);
+/* Make the stat items look more like buttons */
+.stat-item:hover {
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
-.stat-item:last-child:after {
-  display: none;
+.stat-item:active {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 .stat-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+  box-shadow: var(--box-shadow-sm);
 }
 
 .stat-icon.pending {
@@ -330,9 +290,19 @@ h3 {
 }
 
 .stat-label {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+/* Add subtle arrow to indicate these are navigation elements */
+.stat-item:after {
+  content: "›";
+  position: absolute;
+  bottom: var(--spacing-xs);
+  font-size: var(--font-size-lg);
+  color: var(--color-text-light);
+  opacity: 0.6;
 }
 
 /* Section headers */
@@ -356,8 +326,8 @@ h3 {
 
 /* Category Cards */
 .category-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-md);
   padding: 0 var(--spacing-md);
   margin-bottom: var(--spacing-md);
@@ -367,12 +337,11 @@ h3 {
   position: relative;
   background-color: var(--color-card);
   border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
   box-shadow: var(--box-shadow);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  text-align: center;
   cursor: pointer;
   overflow: hidden;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
@@ -417,13 +386,14 @@ h3 {
 }
 
 .category-icon {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  margin-bottom: var(--spacing-md);
+  margin-right: var(--spacing-md);
   background-color: var(--color-secondary-light);
   color: var(--color-text-secondary);
 }
@@ -438,6 +408,11 @@ h3 {
   color: var(--color-success);
 }
 
+.category-content {
+  flex: 1;
+  text-align: left;
+}
+
 .category-title {
   font-weight: var(--font-weight-semibold);
   margin-bottom: var(--spacing-xs);
@@ -446,6 +421,11 @@ h3 {
 .category-description {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
+}
+
+.category-arrow {
+  margin-left: var(--spacing-md);
+  color: var(--color-text-light);
 }
 
 /* Recent Tasks */
