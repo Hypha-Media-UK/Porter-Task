@@ -29,18 +29,93 @@
         </div>
       </div>
     </div>
+    
+    <h2>Shift Schedule</h2>
+    
+    <div class="setting-group">
+      <div class="setting-row shift-time-row">
+        <div class="setting-label">
+          <h3>Day Shift Hours</h3>
+          <p>Set the standard start and end times for day shifts</p>
+        </div>
+        <div class="setting-control time-control">
+          <div class="time-inputs">
+            <div class="time-input-group">
+              <label>Start</label>
+              <input 
+                type="time" 
+                v-model="settings.shifts.day.start" 
+                class="time-input"
+              >
+            </div>
+            <span class="time-separator">to</span>
+            <div class="time-input-group">
+              <label>End</label>
+              <input 
+                type="time" 
+                v-model="settings.shifts.day.end" 
+                class="time-input"
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="setting-row shift-time-row">
+        <div class="setting-label">
+          <h3>Night Shift Hours</h3>
+          <p>Set the standard start and end times for night shifts</p>
+        </div>
+        <div class="setting-control time-control">
+          <div class="time-inputs">
+            <div class="time-input-group">
+              <label>Start</label>
+              <input 
+                type="time" 
+                v-model="settings.shifts.night.start" 
+                class="time-input"
+              >
+            </div>
+            <span class="time-separator">to</span>
+            <div class="time-input-group">
+              <label>End</label>
+              <input 
+                type="time" 
+                v-model="settings.shifts.night.end" 
+                class="time-input"
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, onMounted } from 'vue'
 
 // Local state
 const settings = reactive({
   storage: {
     type: 'local',
     autoBackup: true
+  },
+  shifts: {
+    day: {
+      start: '08:00',
+      end: '16:00'
+    },
+    night: {
+      start: '20:00',
+      end: '04:00'
+    }
   }
+})
+
+// Initialize settings (could be loaded from a store or API in a real app)
+onMounted(() => {
+  // Any initialization logic would go here
 })
 </script>
 
@@ -63,6 +138,7 @@ const settings = reactive({
   border-radius: var(--border-radius);
   box-shadow: var(--box-shadow);
   overflow: hidden;
+  margin-bottom: var(--spacing-xl);
 }
 
 .setting-row {
@@ -106,6 +182,53 @@ const settings = reactive({
   border: 1px solid var(--color-border);
   font-size: var(--font-size-sm);
   min-width: 120px;
+}
+
+/* Shift time inputs */
+.shift-time-row {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.time-control {
+  width: 100%;
+  margin-top: var(--spacing-sm);
+  justify-content: flex-start;
+}
+
+.time-inputs {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.time-input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.time-input-group label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+  margin-bottom: var(--spacing-xs);
+}
+
+.time-input {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+  width: 100px;
+  appearance: none;
+  background-color: var(--color-background);
+}
+
+.time-separator {
+  margin: 0 var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  align-self: flex-end;
+  margin-bottom: var(--spacing-xs);
 }
 
 /* Switch toggle */
@@ -162,5 +285,17 @@ input:checked + .slider:before {
 
 .slider.round:before {
   border-radius: 50%;
+}
+
+@media (min-width: 768px) {
+  .shift-time-row {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .time-control {
+    width: auto;
+    margin-top: 0;
+  }
 }
 </style>
