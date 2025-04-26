@@ -121,34 +121,7 @@
           <p>Create a new porter shift to start tracking and managing tasks.</p>
         </div>
         
-        <form class="shift-form card" @submit.prevent="startNewShift">
-          <div class="form-group">
-            <label>Shift Type</label>
-            <div class="segmented-control">
-              <div 
-                class="segment" 
-                :class="{ active: shiftType === 'Day' }" 
-                @click="shiftType = 'Day'"
-              >
-                Day Shift
-              </div>
-              <div 
-                class="segment" 
-                :class="{ active: shiftType === 'Night' }" 
-                @click="shiftType = 'Night'"
-              >
-                Night Shift
-              </div>
-              <div 
-                class="segment-highlighter" 
-                :style="{ 
-                  transform: `translateX(${shiftType === 'Day' ? '0%' : '100%'})`,
-                  width: '50%'
-                }"
-              ></div>
-            </div>
-          </div>
-          
+        <div class="shift-form card">
           <div class="form-group">
             <label for="supervisor">Supervisor</label>
             <select 
@@ -162,10 +135,43 @@
             </select>
           </div>
           
-          <button type="submit" class="btn-primary btn-large start-btn">
-            Start Shift
-          </button>
-        </form>
+          <div class="shift-actions">
+            <button 
+              type="button" 
+              class="btn-primary btn-large"
+              @click="startSpecificShift('Day')"
+              :disabled="!supervisor"
+            >
+              <span class="btn-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="1" x2="12" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="23"></line>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                  <line x1="1" y1="12" x2="3" y2="12"></line>
+                  <line x1="21" y1="12" x2="23" y2="12"></line>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+              </span>
+              Start Day Shift
+            </button>
+            <button 
+              type="button" 
+              class="btn-secondary btn-large"
+              @click="startSpecificShift('Night')"
+              :disabled="!supervisor"
+            >
+              <span class="btn-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+              </span>
+              Start Night Shift
+            </button>
+          </div>
+        </div>
         
         <div class="recent-shifts" v-if="recentShifts.length > 0">
           <div class="section-header">
@@ -289,9 +295,9 @@ const recentShifts = computed(() => {
 })
 
 // Methods
-const startNewShift = () => {
+const startSpecificShift = (type: 'Day' | 'Night') => {
   if (supervisor.value) {
-    startShift(shiftType.value, supervisor.value)
+    startShift(type, supervisor.value)
     if (navigate) navigate('tasks')
   }
 }
@@ -538,12 +544,30 @@ p {
 
 .shift-actions {
   display: flex;
+  flex-direction: column;
   gap: var(--spacing-md);
   margin-top: var(--spacing-lg);
 }
 
 .shift-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
   flex: 1;
+  padding: var(--spacing-md);
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .shift-actions {
+    flex-direction: row;
+  }
 }
 
 /* Quick Actions Section */
