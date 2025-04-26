@@ -17,110 +17,141 @@
         </div>
         
         <div class="form-grid">
-          <!-- First column -->
-          <div class="form-group job-type">
-            <label for="jobCategory">Job Type</label>
-            <select 
-              id="jobCategory" 
-              v-model="formData.jobCategory" 
-              class="form-control"
-              required
-            >
-              <option value="" disabled>Select job type</option>
-              <option v-for="category in categories" :key="category" :value="category">
-                {{ category }}
-              </option>
-            </select>
-          </div>
-          
-          <!-- Second column -->
-          <div class="form-group job-item">
-            <label for="itemType">Job Item</label>
-            <select 
-              id="itemType" 
-              v-model="formData.itemType" 
-              class="form-control"
-              required
-            >
-              <option value="" disabled>Select job item</option>
-              <option v-for="item in itemTypesForCategory" :key="item" :value="item">
-                {{ item }}
-              </option>
-            </select>
-          </div>
-          
-          <div class="form-group from-section">
-            <h2>From</h2>
-            <select 
-              id="fromLocationId"
-              v-model="selectedFromLocation"
-              class="form-control"
-              required
-            >
-              <option value="" disabled>Select location</option>
-              <option v-for="location in allLocations" :key="location.id" :value="location">
-                {{ location.name }} ({{ location.buildingName }})
-              </option>
-            </select>
+          <!-- Job Details Section -->
+          <div class="form-section job-type">
+            <h2 class="form-section-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              Job Details
+            </h2>
             
-            <div v-if="selectedFromLocation" class="building-info">
-              Building: {{ selectedFromLocation.buildingName }}
+            <div class="form-group">
+              <label for="jobCategory">Job Type</label>
+              <select 
+                id="jobCategory" 
+                v-model="formData.jobCategory" 
+                class="form-control"
+                required
+              >
+                <option value="" disabled>Select job type</option>
+                <option v-for="category in categories" :key="category" :value="category">
+                  {{ category }}
+                </option>
+              </select>
+            </div>
+            
+            <div class="form-group job-item">
+              <label for="itemType">Job Item</label>
+              <select 
+                id="itemType" 
+                v-model="formData.itemType" 
+                class="form-control"
+                required
+              >
+                <option value="" disabled>Select job item</option>
+                <option v-for="item in itemTypesForCategory" :key="item" :value="item">
+                  {{ item }}
+                </option>
+              </select>
             </div>
           </div>
           
-          <div class="form-group to-section">
-            <h2>To</h2>
-            <select 
-              id="toLocationId"
-              v-model="selectedToLocation"
-              class="form-control"
-              required
-            >
-              <option value="" disabled>Select location</option>
-              <option v-for="location in allLocations" :key="location.id" :value="location">
-                {{ location.name }} ({{ location.buildingName }})
-              </option>
-            </select>
+          <!-- Locations Section -->
+          <div class="form-section">
+            <h2 class="form-section-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              Locations
+            </h2>
             
-            <div v-if="selectedToLocation" class="building-info">
-              Building: {{ selectedToLocation.buildingName }}
+            <div class="form-group from-section">
+              <h2>From</h2>
+              <select 
+                id="fromLocationId"
+                v-model="selectedFromLocation"
+                class="form-control"
+                required
+              >
+                <option value="" disabled>Select location</option>
+                <option v-for="location in allLocations" :key="location.id" :value="location">
+                  {{ location.name }} ({{ location.buildingName }})
+                </option>
+              </select>
+              
+              <div v-if="selectedFromLocation" class="building-info">
+                Building: {{ selectedFromLocation.buildingName }}
+              </div>
+            </div>
+            
+            <div class="form-group to-section">
+              <h2>To</h2>
+              <select 
+                id="toLocationId"
+                v-model="selectedToLocation"
+                class="form-control"
+                required
+              >
+                <option value="" disabled>Select location</option>
+                <option v-for="location in allLocations" :key="location.id" :value="location">
+                  {{ location.name }} ({{ location.buildingName }})
+                </option>
+              </select>
+              
+              <div v-if="selectedToLocation" class="building-info">
+                Building: {{ selectedToLocation.buildingName }}
+              </div>
             </div>
           </div>
           
-          <div class="form-group porter-section">
-            <h2>Porter Assigned</h2>
-            <select 
-              id="allocatedStaff"
-              v-model="formData.allocatedStaff"
-              class="form-control porter-select"
-            >
-              <option value="">None (Unassigned)</option>
-              <option v-for="porter in porters" :key="porter" :value="porter">
-                {{ porter }}
-              </option>
-            </select>
-          </div>
-          
-          <div class="form-group time-allocated">
-            <label for="allocatedTime">Time Allocated</label>
-            <input 
-              type="time" 
-              id="allocatedTime" 
-              v-model="formData.allocatedTime" 
-              class="form-control"
-              required
-            />
-          </div>
-          
-          <div class="form-group time-completed">
-            <label for="completedTime">Time Completed</label>
-            <input 
-              type="time" 
-              id="completedTime" 
-              v-model="formData.completedTime" 
-              class="form-control"
-              :disabled="formData.status !== 'Completed'"
-            />
+          <!-- Assignment Section -->
+          <div class="form-section">
+            <h2 class="form-section-title">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              Assignment
+            </h2>
+            
+            <div class="form-group porter-section">
+              <h2>Porter Assigned</h2>
+              <select 
+                id="allocatedStaff"
+                v-model="formData.allocatedStaff"
+                class="form-control porter-select"
+              >
+                <option value="">None (Unassigned)</option>
+                <option v-for="porter in porters" :key="porter" :value="porter">
+                  {{ porter }}
+                </option>
+              </select>
+            </div>
+            
+            <div class="form-group time-allocated">
+              <label for="allocatedTime">Time Allocated</label>
+              <input 
+                type="time" 
+                id="allocatedTime" 
+                v-model="formData.allocatedTime" 
+                class="form-control"
+                required
+              />
+            </div>
+            
+            <div class="form-group time-completed">
+              <label for="completedTime">Time Completed</label>
+              <input 
+                type="time" 
+                id="completedTime" 
+                v-model="formData.completedTime" 
+                class="form-control"
+                :disabled="formData.status !== 'Completed'"
+              />
+            </div>
           </div>
         </div>
         
@@ -595,48 +626,94 @@ watch(() => formData.value.itemType, () => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding: var(--spacing-md);
+  padding: 0;
+  padding-bottom: 76px; /* Space for bottom buttons + safe area */
 }
 
 .form-container {
   flex: 1;
+  width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  width: 100%;
 }
 
 h1 {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
-  margin: 0 0 var(--spacing-lg);
+  margin: 0;
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
   color: var(--color-primary);
+  background-color: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 h2 {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
-  margin: 0 0 var(--spacing-sm);
+  margin: 0 0 var(--spacing-xs);
   color: var(--color-text);
 }
 
 .task-form {
   background-color: white;
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
-  padding: var(--spacing-lg);
+  padding: 0 var(--spacing-md) var(--spacing-lg);
 }
 
 .form-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Card-style form sections for better visual grouping on mobile */
+.form-section {
+  background-color: var(--color-card);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  box-shadow: var(--box-shadow-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.form-section-title {
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+}
+
+.form-section-title svg {
+  margin-right: var(--spacing-xs);
 }
 
 @media (min-width: 768px) {
+  .task-form-view {
+    padding: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+  }
+  
   .form-grid {
+    display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-xl);
+    gap: var(--spacing-md);
+  }
+
+  .task-form {
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: var(--spacing-lg);
+  }
+  
+  h1 {
+    position: relative;
+    box-shadow: none;
+    background-color: transparent;
+    margin-bottom: var(--spacing-lg);
   }
   
   /* Define grid layout for desktop */
@@ -677,43 +754,75 @@ h2 {
 }
 
 .form-group {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
 }
 
 .form-group label {
   display: block;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 4px;
   font-weight: var(--font-weight-medium);
-  color: var(--color-text);
+  color: var(--color-text-secondary);
+  font-size: 12px;
 }
 
 .form-control {
   width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  font-size: var(--font-size-base);
+  border-radius: var(--border-radius-lg);
+  font-size: 14px;
+  background-color: #f9fafb;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
+  height: 40px; /* Still accessible but smaller */
+}
+
+.form-control:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.1);
+  outline: none;
+}
+
+/* iOS-style select elements */
+select.form-control {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M2.5 4L6 7.5L9.5 4' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
 }
 
 .time-received {
-  margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--color-border-light);
+  margin-bottom: var(--spacing-sm);
+  background-color: var(--color-card);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  box-shadow: var(--box-shadow-sm);
 }
 
 .time-received label {
-  font-size: var(--font-size-lg);
-  color: var(--color-primary);
+  font-size: 13px;
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
 }
 
 .time-received input {
-  max-width: 200px;
   border-left: 3px solid var(--color-primary);
-  font-size: var(--font-size-lg);
 }
 
-.from-section, .to-section {
-  margin-bottom: var(--spacing-md);
+.from-section h2, .to-section h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.from-section h2:before {
+  content: "↑";
+  color: var(--color-primary);
+}
+
+.to-section h2:before {
+  content: "↓";
+  color: var(--color-success);
 }
 
 .from-section select, .to-section select {
@@ -725,55 +834,87 @@ h2 {
 }
 
 .building-info {
-  font-size: var(--font-size-sm);
+  font-size: 11px;
   color: var(--color-text-secondary);
-  background: var(--color-primary-light);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius);
+  background: var(--color-background-light);
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--border-radius-pill);
   display: inline-block;
 }
 
 .form-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-md);
-  padding-top: var(--spacing-md);
-  border-top: 1px solid var(--color-border-light);
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  background-color: white;
+  border-top: 1px solid var(--color-border);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
 }
 
-/* Button styles */
+@media (min-width: 768px) {
+  .form-actions {
+    position: static;
+    box-shadow: none;
+    border-radius: 0 0 var(--border-radius) var(--border-radius);
+    justify-content: flex-end;
+    gap: var(--spacing-md);
+  }
+}
+
+/* Button styles - improved for mobile */
 .btn-secondary {
-  background-color: var(--color-text-secondary);
-  color: white;
+  background-color: #f1f2f3;
+  color: var(--color-text);
   border: none;
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--border-radius);
-  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-lg);
+  font-weight: var(--font-weight-semibold);
+  font-size: 13px;
   cursor: pointer;
+  flex: 1;
   transition: background-color var(--transition-fast);
+  max-height: 50px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn-secondary:hover {
-  background-color: var(--color-text);
+.btn-secondary:active {
+  background-color: #e5e5e5;
 }
 
 .btn-primary {
   background-color: var(--color-primary);
   color: white;
   border: none;
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--border-radius);
-  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-lg);
+  font-weight: var(--font-weight-semibold);
+  font-size: 13px;
   cursor: pointer;
+  flex: 1;
   transition: background-color var(--transition-fast);
+  max-height: 50px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn-primary:hover {
+.btn-primary:active {
   background-color: var(--color-primary-dark, #0062cc);
 }
 
 .btn-primary:disabled {
   background-color: var(--color-primary-light, #80b7ff);
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
@@ -781,19 +922,27 @@ h2 {
   background-color: var(--color-success);
   color: white;
   border: none;
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--border-radius);
-  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-lg);
+  font-weight: var(--font-weight-semibold);
+  font-size: 13px;
   cursor: pointer;
+  flex: 1.5;
   transition: background-color var(--transition-fast);
+  max-height: 50px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn-success:hover {
+.btn-success:active {
   background-color: var(--color-success-dark, #218838);
 }
 
 .btn-success:disabled {
   background-color: var(--color-success-light, #4caf7d);
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
@@ -801,14 +950,28 @@ h2 {
   background-color: #dc3545;
   color: white;
   border: none;
-  padding: var(--spacing-sm) var(--spacing-lg);
-  border-radius: var(--border-radius);
-  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-lg);
+  font-weight: var(--font-weight-semibold);
+  font-size: 13px;
   cursor: pointer;
+  flex: 1;
   transition: background-color var(--transition-fast);
+  max-height: 50px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.btn-danger:hover {
+.btn-danger:active {
   background-color: #bd2130;
+}
+
+/* Make sure buttons have adequate touch targets on mobile */
+@media (max-width: 767px) {
+  .btn-secondary, .btn-primary, .btn-success, .btn-danger {
+    min-height: 50px;
+  }
 }
 </style>
