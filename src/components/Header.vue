@@ -10,10 +10,9 @@
       
       <!-- Navigation icons (now on left side as requested) -->
       <div class="nav-icons">
-        <!-- Home Icon -->
+        <!-- Home Icon (without active state) -->
         <button 
           class="nav-button"
-          :class="{ active: routePath === '/' }"
           @click="navigateTo('/')"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -59,12 +58,11 @@
       {{ taskId ? 'Edit Task' : 'New Task' }}
     </h1>
     
-    <!-- Tasks Icon (now on right side as requested) -->
+    <!-- Tasks Icon (now on right side with permanent active state) -->
     <div class="header-right">
       <button 
         v-if="isShiftActive" 
-        class="nav-button tasks-button"
-        :class="{ active: routePath === '/tasks' }"
+        class="nav-button tasks-button active"
         @click="navigateTo('/tasks')"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
