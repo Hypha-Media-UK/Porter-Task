@@ -206,7 +206,7 @@ const endCurrentShift = () => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-bottom: calc(70px + var(--safe-area-inset-bottom)); /* Space for tab navigation */
+  padding-bottom: var(--spacing-lg); /* Reduced padding since we removed bottom navigation */
 }
 
 .top-header {

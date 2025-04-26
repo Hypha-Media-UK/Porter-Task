@@ -94,20 +94,9 @@ function navigate(route: string, params?: RouteParams) {
 </script>
 
 <style scoped>
+/* Hide the tab navigation since we've moved it to the header */
 .tab-navigation {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-around;
-  background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 -0.5px 0 rgba(0, 0, 0, 0.15);
-  height: calc(60px + var(--safe-area-inset-bottom));
-  padding-bottom: var(--safe-area-inset-bottom);
-  z-index: var(--z-index-nav);
+  display: none; /* Hide the bottom navigation */
 }
 
 .nav-tab {

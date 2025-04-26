@@ -1,6 +1,6 @@
 <template>
   <div class="app">
-    <Header v-if="isShiftActive || $route.name !== 'home'" />
+    <Header />
     
     <main class="main-content">
       <router-view v-slot="{ Component }">

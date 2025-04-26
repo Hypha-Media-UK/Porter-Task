@@ -105,9 +105,6 @@
       
       <!-- NEW SHIFT VIEW -->
       <div v-else class="new-shift">
-        <div class="top-header">
-          <h1>Porter Track</h1>
-        </div>
         
         <div class="welcome-card">
           <div class="welcome-icon">
@@ -336,7 +333,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-bottom: calc(70px + var(--safe-area-inset-bottom)); /* Space for fixed tab navigation */
+  padding-bottom: var(--spacing-lg); /* Reduced padding since we removed bottom navigation */
 }
 
 .content {
