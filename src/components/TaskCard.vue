@@ -7,59 +7,86 @@
       'completed': task.status === 'Completed'
     }"
   >
-    <div class="task-header">
-      <div class="task-category">{{ task.jobCategory }}</div>
-      <div class="task-status" :class="task.status.toLowerCase()">
-        {{ task.status }}
-      </div>
-    </div>
+    <div class="task-status-indicator" :class="task.status.toLowerCase()"></div>
     
-    <div class="task-details">
-      <div class="task-item-type">{{ task.itemType }}</div>
+    <div class="task-content">
+      <div class="task-header">
+        <div class="task-meta">
+          <div class="task-category">{{ task.jobCategory }}</div>
+          <div class="task-status-badge" :class="task.status.toLowerCase()">
+            {{ task.status }}
+          </div>
+        </div>
+        <div class="task-item-type">{{ task.itemType }}</div>
+      </div>
       
-      <div class="task-locations">
-        <div class="location from">
-          <span class="label">From:</span>
-          <span class="value">{{ task.fromLocation.displayName }}</span>
+      <div class="task-journey">
+        <div class="journey-point from">
+          <div class="journey-icon from-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </div>
+          <div class="journey-details">
+            <div class="journey-label">From</div>
+            <div class="journey-location">{{ task.fromLocation.displayName }}</div>
+          </div>
         </div>
         
-        <div class="location-arrow">
+        <div class="journey-connector">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-            <polyline points="12 5 19 12 12 19"></polyline>
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <polyline points="19 12 12 19 5 12"></polyline>
           </svg>
         </div>
         
-        <div class="location to">
-          <span class="label">To:</span>
-          <span class="value">{{ task.toLocation.displayName }}</span>
+        <div class="journey-point to">
+          <div class="journey-icon to-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 16l4-4-4-4"></path>
+              <path d="M8 12h8"></path>
+            </svg>
+          </div>
+          <div class="journey-details">
+            <div class="journey-label">To</div>
+            <div class="journey-location">{{ task.toLocation.displayName }}</div>
+          </div>
         </div>
       </div>
       
-      <div class="task-time">
-        <span class="label">Received:</span>
-        <span class="value">{{ formatTime(new Date(task.receivedTime)) }}</span>
+      <div class="task-footer">
+        <div class="task-time">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span>{{ formatTime(new Date(task.receivedTime)) }}</span>
+          
+          <template v-if="task.status === 'Completed' && task.completedTime">
+            <span class="separator">•</span>
+            <span class="completed-time">{{ formatTime(new Date(task.completedTime)) }}</span>
+          </template>
+        </div>
         
-        <template v-if="task.status === 'Completed' && task.completedTime">
-          <span class="separator">•</span>
-          <span class="label">Completed:</span>
-          <span class="value">{{ formatTime(new Date(task.completedTime)) }}</span>
-        </template>
-      </div>
-      
-      <!-- Display porter information for completed tasks -->
-      <div v-if="task.status === 'Completed' && task.allocatedStaff" class="task-porter">
-        <span class="label">Porter:</span>
-        <span class="value porter-name">{{ task.allocatedStaff }}</span>
+        <!-- Display porter information for completed tasks -->
+        <div v-if="task.status === 'Completed' && task.allocatedStaff" class="task-porter">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span class="porter-name">{{ task.allocatedStaff }}</span>
+        </div>
       </div>
     </div>
     
-    <div v-if="!compact && task.status === 'Pending'" class="task-actions">
+    <div v-if="!compact && task.status === 'Pending'" class="task-action-ribbon">
       <button 
         class="btn-success mark-complete-btn"
         @click.stop="markAsComplete"
       >
-        Mark as Complete
+        Complete
       </button>
     </div>
   </div>
@@ -88,140 +115,214 @@ const markAsComplete = () => {
 </script>
 
 <style scoped>
-/* Task card with improved styling */
+/* Modern iOS-inspired task card */
 .task-card {
   position: relative;
-  overflow: hidden;
-  background-color: white;
-  border-radius: var(--border-radius);
+  background-color: var(--color-card);
+  border-radius: var(--border-radius-lg);
   box-shadow: var(--box-shadow);
   overflow: hidden;
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.task-card:not(.compact):hover {
-  transform: translateY(-2px);
-  box-shadow: var(--box-shadow-strong);
+.task-card:not(.compact):active {
+  transform: scale(0.98);
+  box-shadow: var(--box-shadow);
 }
 
-.task-card.pending {
-  border-left: 4px solid var(--color-pending);
+.task-status-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
 }
 
-.task-card.completed {
-  border-left: 4px solid var(--color-success);
+.task-status-indicator.pending {
+  background-color: var(--color-pending);
+}
+
+.task-status-indicator.completed {
+  background-color: var(--color-success);
+}
+
+.task-content {
+  padding: var(--spacing-md);
+  flex: 1;
 }
 
 .task-header {
+  margin-bottom: var(--spacing-md);
+}
+
+.task-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-sm) var(--spacing-md);
-  background-color: rgba(0, 0, 0, 0.02);
-  border-bottom: 1px solid var(--color-border-light);
+  margin-bottom: var(--spacing-xs);
 }
 
 .task-category {
-  font-weight: var(--font-weight-medium);
   font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-medium);
 }
 
-.task-status {
+.task-status-badge {
   font-size: var(--font-size-xs);
   padding: 2px var(--spacing-xs);
   border-radius: var(--border-radius-pill);
   font-weight: var(--font-weight-medium);
+  color: white;
+  min-width: 70px;
+  text-align: center;
 }
 
-.task-status.pending {
+.task-status-badge.pending {
   background-color: var(--color-pending);
-  color: white;
 }
 
-.task-status.completed {
+.task-status-badge.completed {
   background-color: var(--color-success);
-  color: white;
-}
-
-.task-details {
-  padding: var(--spacing-md);
 }
 
 .task-item-type {
-  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.task-journey {
+  position: relative;
+  padding: var(--spacing-sm) 0;
   margin-bottom: var(--spacing-sm);
 }
 
-.task-locations {
+.journey-point {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-md);
+}
+
+.journey-point.to {
+  margin-bottom: 0;
+}
+
+.journey-icon {
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
-  margin-bottom: var(--spacing-sm);
-  gap: var(--spacing-xs);
+  justify-content: center;
+  margin-right: var(--spacing-sm);
+  color: var(--color-text-secondary);
 }
 
-.location {
+.journey-icon.from-icon {
+  color: var(--color-primary);
+}
+
+.journey-icon.to-icon {
+  color: var(--color-success);
+}
+
+.journey-details {
+  flex: 1;
+}
+
+.journey-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.journey-location {
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
 }
 
-.location-arrow {
+.journey-connector {
+  position: absolute;
+  left: 11px;
+  top: 28px;
+  height: calc(100% - 56px);
+  display: flex;
+  align-items: center;
   color: var(--color-text-light);
-  margin: 0 var(--spacing-xs);
 }
 
-.task-time {
+.task-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
-  margin-bottom: var(--spacing-xs);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-border-light);
 }
 
-.task-porter {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+.task-time, .task-porter {
+  display: flex;
+  align-items: center;
+}
+
+.task-time svg, .task-porter svg {
+  margin-right: 4px;
+}
+
+.completed-time {
+  color: var(--color-success);
 }
 
 .porter-name {
   font-weight: var(--font-weight-medium);
-  color: var(--color-success);
-}
-
-.label {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-light);
-  margin-right: 2px;
+  color: var(--color-text);
 }
 
 .separator {
   margin: 0 var(--spacing-xs);
 }
 
-.task-actions {
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-top: 1px solid var(--color-border-light);
+.task-action-ribbon {
   display: flex;
   justify-content: flex-end;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: rgba(var(--color-success-rgb), 0.05);
+  border-top: 1px solid var(--color-border-light);
 }
 
 .mark-complete-btn {
   font-size: var(--font-size-sm);
   padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-pill);
 }
 
 /* Compact variation */
-.task-card.compact .task-header {
-  padding: var(--spacing-xs) var(--spacing-md);
+.task-card.compact {
+  margin-bottom: var(--spacing-sm);
 }
 
-.task-card.compact .task-details {
-  padding: var(--spacing-xs) var(--spacing-md);
+.task-card.compact .task-content {
+  padding: var(--spacing-sm);
 }
 
 .task-card.compact .task-item-type {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
+}
+
+.task-card.compact .task-journey {
+  padding: var(--spacing-xs) 0;
   margin-bottom: var(--spacing-xs);
 }
 
-.task-card.compact .task-locations {
-  margin-bottom: var(--spacing-xs);
-  font-size: var(--font-size-xs);
+.task-card.compact .journey-point {
+  margin-bottom: var(--spacing-sm);
+}
+
+.task-card.compact .journey-icon {
+  transform: scale(0.9);
 }
 </style>
