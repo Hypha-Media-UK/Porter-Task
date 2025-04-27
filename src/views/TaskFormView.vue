@@ -78,7 +78,7 @@
               >
                 <option value="" disabled>Select location</option>
                 <option v-for="location in allLocations" :key="location.id" :value="location">
-                  {{ location.name }} ({{ location.buildingName }})
+                  {{ location.name }}
                 </option>
               </select>
               
@@ -97,7 +97,7 @@
               >
                 <option value="" disabled>Select location</option>
                 <option v-for="location in allLocations" :key="location.id" :value="location">
-                  {{ location.name }} ({{ location.buildingName }})
+                  {{ location.name }}
                 </option>
               </select>
               
