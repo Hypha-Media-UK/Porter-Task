@@ -71,7 +71,7 @@
           <div class="location-section">
             <h4>Departments</h4>
             <ul class="location-list">
-              <li v-for="department in building.departments.concat(building.wards)" :key="department.id" class="location-item">
+              <li v-for="department in getAllDepartments(building)" :key="department.id" class="location-item">
                 <div class="location-info">
                   <span v-if="editingDepartment !== department.id || editingDepartmentBuilding !== building.id">{{ department.name }}</span>
                   <input 
@@ -132,7 +132,7 @@
                   </button>
                 </div>
               </li>
-              <li v-if="building.departments.length === 0 && building.wards.length === 0" class="empty-list-item">
+              <li v-if="getAllDepartments(building).length === 0" class="empty-list-item">
                 No departments added
               </li>
             </ul>
@@ -210,6 +210,11 @@ const departmentEditInput = ref<HTMLInputElement | null>(null)
 
 // Store new department names for each building
 const newDepartments = reactive<Record<string, string>>({})
+
+// Helper function to get all departments (combining departments and wards arrays)
+const getAllDepartments = (building: any) => {
+  return [...building.departments, ...building.wards];
+}
 
 // Building management
 onMounted(() => {
@@ -300,7 +305,7 @@ const cancelEditBuilding = () => {
 
 const removeBuilding = (buildingId: string) => {
   const building = buildings.value.find((b: any) => b.id === buildingId)
-  if (building && confirm(`Are you sure you want to remove building "${building.name}" and all its departments and wards?`)) {
+  if (building && confirm(`Are you sure you want to remove building "${building.name}" and all its departments?`)) {
     storeDeleteBuilding(buildingId)
     
     // Remove this building from newDepartments
@@ -308,10 +313,11 @@ const removeBuilding = (buildingId: string) => {
   }
 }
 
-// Department management - updated to use direct input approach
+// Department management - using a simplified approach that handles both departments and wards
 const confirmAddDepartment = (buildingId: string) => {
   const name = newDepartments[buildingId]?.trim()
   if (name) {
+    // By default, add to departments array (could be configurable in the future if needed)
     storeAddDepartment(buildingId, name)
     
     // Clear the input field after adding

@@ -66,126 +66,116 @@
       </div>
     </div>
     
-    <div class="modal-body">
-      <div class="from-location">
+    <div class="locations-container">
+      <!-- From Location Section -->
+      <div class="location-section">
         <h4>From (Origin) Location</h4>
         
-        <div class="location-select">
-          <label for="fromBuilding">Building:</label>
-          <select 
-            id="fromBuilding" 
-            v-model="fromBuildingId"
-            class="form-control"
-            @change="resetFromLocation"
-          >
-            <option value="">No default building</option>
-            <option v-for="building in buildings" :key="building.id" :value="building.id">
-              {{ building.name }}
-            </option>
-          </select>
+        <div class="location-form">
+          <div class="building-select">
+            <label for="fromBuilding">Building:</label>
+            <select 
+              id="fromBuilding" 
+              v-model="fromBuildingId"
+              class="form-control"
+              @change="resetFromLocation"
+            >
+              <option value="">No default building</option>
+              <option v-for="building in buildings" :key="building.id" :value="building.id">
+                {{ building.name }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="department-select" v-if="fromBuildingId">
+            <label for="fromDepartment">Department:</label>
+            <select 
+              id="fromDepartment" 
+              v-model="fromLocationId"
+              class="form-control"
+            >
+              <option value="">Select a department</option>
+              <option v-for="department in fromDepartments" :key="department.id" :value="department.id">
+                {{ department.name }}
+              </option>
+            </select>
+          </div>
         </div>
         
-        <div class="location-select" v-if="fromBuildingId">
-          <label for="fromLocationType">Location Type:</label>
-          <select 
-            id="fromLocationType" 
-            v-model="fromLocationType"
-            class="form-control"
-            @change="resetFromLocationId"
-          >
-            <option value="department">Department</option>
-            <option value="ward">Ward</option>
-          </select>
-        </div>
-        
-        <div class="location-select" v-if="fromBuildingId && fromLocationType">
-          <label for="fromLocation">Location:</label>
-          <select 
-            id="fromLocation" 
-            v-model="fromLocationId"
-            class="form-control"
-          >
-            <option value="">Select a location</option>
-            <option v-for="location in fromLocations" :key="location.id" :value="location.id">
-              {{ location.name }}
-            </option>
-          </select>
+        <div class="location-summary" v-if="hasFromLocation">
+          <div class="summary-content">
+            <div class="summary-icon from-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div class="summary-text">
+              {{ fromBuildingName }} - {{ fromDepartmentName }}
+            </div>
+          </div>
         </div>
       </div>
       
-      <div class="to-location">
+      <!-- To Location Section -->
+      <div class="location-section">
         <h4>To (Destination) Location</h4>
         
-        <div class="location-select">
-          <label for="toBuilding">Building:</label>
-          <select 
-            id="toBuilding" 
-            v-model="toBuildingId"
-            class="form-control"
-            @change="resetToLocation"
-          >
-            <option value="">No default building</option>
-            <option v-for="building in buildings" :key="building.id" :value="building.id">
-              {{ building.name }}
-            </option>
-          </select>
+        <div class="location-form">
+          <div class="building-select">
+            <label for="toBuilding">Building:</label>
+            <select 
+              id="toBuilding" 
+              v-model="toBuildingId"
+              class="form-control"
+              @change="resetToLocation"
+            >
+              <option value="">No default building</option>
+              <option v-for="building in buildings" :key="building.id" :value="building.id">
+                {{ building.name }}
+              </option>
+            </select>
+          </div>
+          
+          <div class="department-select" v-if="toBuildingId">
+            <label for="toDepartment">Department:</label>
+            <select 
+              id="toDepartment" 
+              v-model="toLocationId"
+              class="form-control"
+            >
+              <option value="">Select a department</option>
+              <option v-for="department in toDepartments" :key="department.id" :value="department.id">
+                {{ department.name }}
+              </option>
+            </select>
+          </div>
         </div>
         
-        <div class="location-select" v-if="toBuildingId">
-          <label for="toLocationType">Location Type:</label>
-          <select 
-            id="toLocationType" 
-            v-model="toLocationType"
-            class="form-control"
-            @change="resetToLocationId"
-          >
-            <option value="department">Department</option>
-            <option value="ward">Ward</option>
-          </select>
-        </div>
-        
-        <div class="location-select" v-if="toBuildingId && toLocationType">
-          <label for="toLocation">Location:</label>
-          <select 
-            id="toLocation" 
-            v-model="toLocationId"
-            class="form-control"
-          >
-            <option value="">Select a location</option>
-            <option v-for="location in toLocations" :key="location.id" :value="location.id">
-              {{ location.name }}
-            </option>
-          </select>
+        <div class="location-summary" v-if="hasToLocation">
+          <div class="summary-content">
+            <div class="summary-icon to-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+            </div>
+            <div class="summary-text">
+              {{ toBuildingName }} - {{ toDepartmentName }}
+            </div>
+          </div>
         </div>
       </div>
     </div>
     
     <div class="settings-summary" v-if="hasFromLocation || hasToLocation">
       <h4 class="summary-title">Current Settings Summary</h4>
-      <div class="summary-content">
+      <div class="summary-item-container">
         <div class="summary-item" v-if="hasFromLocation">
-          <div class="summary-icon from-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <polyline points="12 6 12 12 16 14"></polyline>
-            </svg>
-          </div>
-          <div class="summary-text">
-            <strong>From:</strong> 
-            {{ fromBuildingName }} - {{ fromLocationName }}
-          </div>
+          <strong>From:</strong> {{ fromBuildingName }} - {{ fromDepartmentName }}
         </div>
         <div class="summary-item" v-if="hasToLocation">
-          <div class="summary-icon to-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3"></circle>
-            </svg>
-          </div>
-          <div class="summary-text">
-            <strong>To:</strong> 
-            {{ toBuildingName }} - {{ toLocationName }}
-          </div>
+          <strong>To:</strong> {{ toBuildingName }} - {{ toDepartmentName }}
         </div>
       </div>
       <p class="settings-note" v-if="selectedItemType">
@@ -219,7 +209,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
 import type { JobCategoryDefault } from '../../types'
 
@@ -245,12 +235,10 @@ const itemTypesForCategory = computed(() => {
 
 // From location state
 const fromBuildingId = ref('');
-const fromLocationType = ref<'department' | 'ward'>('department');
 const fromLocationId = ref('');
 
 // To location state
 const toBuildingId = ref('');
-const toLocationType = ref<'department' | 'ward'>('ward');
 const toLocationId = ref('');
 
 // Computed values for summary display
@@ -263,17 +251,15 @@ const fromBuildingName = computed(() => {
   return building?.name || '';
 });
 
-const fromLocationName = computed(() => {
+const fromDepartmentName = computed(() => {
   if (!fromBuildingId.value || !fromLocationId.value) return '';
   const building = buildings.value.find(b => b.id === fromBuildingId.value);
   if (!building) return '';
   
-  const locations = fromLocationType.value === 'department' 
-    ? building.departments 
-    : building.wards;
-  
-  const location = locations.find(l => l.id === fromLocationId.value);
-  return location?.name || '';
+  // Check in both departments and wards arrays and combine them into a single departments list
+  const allDepartments = [...building.departments, ...building.wards];
+  const department = allDepartments.find(d => d.id === fromLocationId.value);
+  return department?.name || '';
 });
 
 const toBuildingName = computed(() => {
@@ -282,49 +268,38 @@ const toBuildingName = computed(() => {
   return building?.name || '';
 });
 
-const toLocationName = computed(() => {
+const toDepartmentName = computed(() => {
   if (!toBuildingId.value || !toLocationId.value) return '';
   const building = buildings.value.find(b => b.id === toBuildingId.value);
   if (!building) return '';
   
-  const locations = toLocationType.value === 'department' 
-    ? building.departments 
-    : building.wards;
-  
-  const location = locations.find(l => l.id === toLocationId.value);
-  return location?.name || '';
+  // Check in both departments and wards arrays and combine them into a single departments list
+  const allDepartments = [...building.departments, ...building.wards];
+  const department = allDepartments.find(d => d.id === toLocationId.value);
+  return department?.name || '';
 });
 
 // Computed properties
-const buildings = computed(() => settingsStore.buildings)
+const buildings = computed(() => settingsStore.buildings);
 
-const fromLocations = computed(() => {
-  if (!fromBuildingId.value || !fromLocationType.value) return [];
+const fromDepartments = computed(() => {
+  if (!fromBuildingId.value) return [];
   
   const building = buildings.value.find(b => b.id === fromBuildingId.value);
   if (!building) return [];
   
-  return fromLocationType.value === 'department' ? building.departments : building.wards;
-})
+  // Combine departments and wards into a single list
+  return [...building.departments, ...building.wards];
+});
 
-const toLocations = computed(() => {
-  if (!toBuildingId.value || !toLocationType.value) return [];
+const toDepartments = computed(() => {
+  if (!toBuildingId.value) return [];
   
   const building = buildings.value.find(b => b.id === toBuildingId.value);
   if (!building) return [];
   
-  return toLocationType.value === 'department' ? building.departments : building.wards;
-})
-
-// Watch for changes in location type to update the location dropdown
-watch(fromLocationType, () => {
-  // Reset the selected location ID since the available locations have changed
-  fromLocationId.value = '';
-});
-
-watch(toLocationType, () => {
-  // Reset the selected location ID since the available locations have changed
-  toLocationId.value = '';
+  // Combine departments and wards into a single list
+  return [...building.departments, ...building.wards];
 });
 
 // Methods
@@ -352,12 +327,8 @@ const loadExistingDefaults = () => {
     if (defaults.fromBuildingId) {
       fromBuildingId.value = defaults.fromBuildingId;
       
-      if (defaults.fromLocationType) {
-        fromLocationType.value = defaults.fromLocationType;
-        
-        if (defaults.fromLocationId) {
-          fromLocationId.value = defaults.fromLocationId;
-        }
+      if (defaults.fromLocationId) {
+        fromLocationId.value = defaults.fromLocationId;
       }
     }
     
@@ -365,12 +336,8 @@ const loadExistingDefaults = () => {
     if (defaults.toBuildingId) {
       toBuildingId.value = defaults.toBuildingId;
       
-      if (defaults.toLocationType) {
-        toLocationType.value = defaults.toLocationType;
-        
-        if (defaults.toLocationId) {
-          toLocationId.value = defaults.toLocationId;
-        }
+      if (defaults.toLocationId) {
+        toLocationId.value = defaults.toLocationId;
       }
     }
   }
@@ -378,41 +345,9 @@ const loadExistingDefaults = () => {
 
 const resetFromLocation = () => {
   fromLocationId.value = '';
-  // Ensure we reset the location when changing the building
-  if (fromBuildingId.value) {
-    // Check if the current building has any departments
-    const building = buildings.value.find(b => b.id === fromBuildingId.value);
-    if (building) {
-      if (building.departments.length > 0) {
-        fromLocationType.value = 'department';
-      } else if (building.wards.length > 0) {
-        fromLocationType.value = 'ward';
-      }
-    }
-  }
-}
-
-const resetFromLocationId = () => {
-  fromLocationId.value = '';
 }
 
 const resetToLocation = () => {
-  toLocationId.value = '';
-  // Ensure we reset the location when changing the building
-  if (toBuildingId.value) {
-    // Check if the current building has any departments
-    const building = buildings.value.find(b => b.id === toBuildingId.value);
-    if (building) {
-      if (building.departments.length > 0) {
-        toLocationType.value = 'department';
-      } else if (building.wards.length > 0) {
-        toLocationType.value = 'ward';
-      }
-    }
-  }
-}
-
-const resetToLocationId = () => {
   toLocationId.value = '';
 }
 
@@ -430,19 +365,35 @@ const saveDefaults = () => {
   // Only set properties that have values
   if (fromBuildingId.value) {
     defaults.fromBuildingId = fromBuildingId.value;
-    defaults.fromLocationType = fromLocationType.value;
     
     if (fromLocationId.value) {
       defaults.fromLocationId = fromLocationId.value;
+      // Determine if the location is in departments or wards
+      const building = buildings.value.find(b => b.id === fromBuildingId.value);
+      if (building) {
+        if (building.departments.some(d => d.id === fromLocationId.value)) {
+          defaults.fromLocationType = 'department';
+        } else if (building.wards.some(w => w.id === fromLocationId.value)) {
+          defaults.fromLocationType = 'ward';
+        }
+      }
     }
   }
   
   if (toBuildingId.value) {
     defaults.toBuildingId = toBuildingId.value;
-    defaults.toLocationType = toLocationType.value;
     
     if (toLocationId.value) {
       defaults.toLocationId = toLocationId.value;
+      // Determine if the location is in departments or wards
+      const building = buildings.value.find(b => b.id === toBuildingId.value);
+      if (building) {
+        if (building.departments.some(d => d.id === toLocationId.value)) {
+          defaults.toLocationType = 'department';
+        } else if (building.wards.some(w => w.id === toLocationId.value)) {
+          defaults.toLocationType = 'ward';
+        }
+      }
     }
   }
   
@@ -467,6 +418,10 @@ const clearDefaults = () => {
   } else {
     settingsStore.deleteJobCategoryDefault(props.category);
   }
+  
+  // Notify parent
+  emit('saved');
+  emit('close');
 };
 
 const cancel = () => {
@@ -483,10 +438,12 @@ onMounted(() => {
 .category-defaults-modal {
   padding: var(--spacing-md);
   max-width: 100%;
+  background-color: white;
+  border-radius: var(--border-radius-lg);
 }
 
 .modal-header {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
   text-align: center;
   padding-bottom: var(--spacing-md);
   border-bottom: 1px solid var(--color-border-light);
@@ -512,12 +469,6 @@ onMounted(() => {
   flex-direction: column;
 }
 
-@media (min-width: 768px) {
-  .setting-scope {
-    flex-direction: row;
-  }
-}
-
 .setting-scope-card {
   flex: 1;
   border: 1px solid var(--color-border);
@@ -530,7 +481,7 @@ onMounted(() => {
 .setting-scope-card.active {
   border-color: var(--color-primary);
   background-color: var(--color-primary-light);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .scope-radio {
@@ -575,35 +526,49 @@ onMounted(() => {
   border-top: 1px dashed var(--color-border);
 }
 
-.modal-body {
+/* Always use column layout for locations, as requested */
+.locations-container {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
-  background-color: white;
+}
+
+.location-section {
+  flex: 1;
+  background-color: var(--color-background-light);
   border-radius: var(--border-radius);
   padding: var(--spacing-md);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border-light);
 }
 
 h4 {
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
-  margin: 0 0 var(--spacing-sm);
+  margin: 0 0 var(--spacing-md);
   color: var(--color-text);
   border-bottom: 1px solid var(--color-border-light);
   padding-bottom: var(--spacing-xs);
 }
 
-.location-select {
-  margin-bottom: var(--spacing-md);
+.location-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
-.location-select label {
-  display: block;
-  margin-bottom: var(--spacing-xs);
+.building-select,
+.department-select {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.building-select label,
+.department-select label {
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 .form-control {
@@ -612,6 +577,84 @@ h4 {
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius);
   font-size: var(--font-size-base);
+  background-color: white;
+}
+
+.location-summary {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background-color: white;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border-light);
+}
+
+.summary-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.summary-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.from-icon {
+  color: var(--color-primary);
+  background-color: var(--color-primary-light, rgba(0, 123, 255, 0.1));
+}
+
+.to-icon {
+  color: var(--color-success);
+  background-color: var(--color-success-light, rgba(40, 167, 69, 0.1));
+}
+
+.summary-text {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.settings-summary {
+  background-color: var(--color-background-light);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.summary-title {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: var(--spacing-xs);
+}
+
+.summary-item-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.summary-item {
+  padding: var(--spacing-sm);
+  background-color: white;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--color-border-light);
+}
+
+.settings-note {
+  font-size: var(--font-size-sm);
+  font-style: italic;
+  color: var(--color-text-secondary);
+  margin: var(--spacing-sm) 0 0;
 }
 
 .modal-actions {
@@ -620,12 +663,15 @@ h4 {
   gap: var(--spacing-md);
 }
 
-.btn-secondary, .btn-primary {
+.btn-secondary, 
+.btn-primary,
+.btn-danger {
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--border-radius);
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+  transition: all var(--transition-fast);
+  font-size: var(--font-size-sm);
 }
 
 .btn-secondary {
@@ -658,85 +704,9 @@ h4 {
   background-color: var(--color-danger);
   color: white;
   border: none;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--border-radius);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  transition: background-color var(--transition-fast);
 }
 
 .btn-danger:hover {
   background-color: var(--color-danger-dark, #c82333);
-}
-
-.settings-summary {
-  background-color: var(--color-background-light, #f8f9fa);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--border-radius);
-  padding: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-}
-
-.summary-title {
-  margin: 0 0 var(--spacing-sm);
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-  border-bottom: 1px solid var(--color-border-light);
-  padding-bottom: var(--spacing-xs);
-}
-
-.summary-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-sm);
-}
-
-.summary-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.summary-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.from-icon {
-  color: var(--color-primary);
-  background-color: var(--color-primary-light, rgba(0, 123, 255, 0.1));
-}
-
-.to-icon {
-  color: var(--color-success);
-  background-color: var(--color-success-light, rgba(40, 167, 69, 0.1));
-}
-
-.summary-text {
-  font-size: var(--font-size-sm);
-}
-
-.settings-note {
-  font-size: var(--font-size-sm);
-  font-style: italic;
-  color: var(--color-text-secondary);
-  margin: var(--spacing-sm) 0 0;
-}
-
-@media (min-width: 768px) {
-  .modal-body {
-    flex-direction: row;
-  }
-  
-  .from-location, .to-location {
-    flex: 1;
-  }
 }
 </style>

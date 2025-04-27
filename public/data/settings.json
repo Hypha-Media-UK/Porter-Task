@@ -23,7 +23,7 @@
       "Wheelchair",
       "Stretcher",
       "Bed",
-      "Walk"
+      "Rose Cottage"
     ],
     "Specimen Delivery": [
       "Blood Sample",
@@ -45,7 +45,15 @@
       "Documents"
     ]
   },
-  "jobCategoryDefaults": [],
+  "jobCategoryDefaults": [
+    {
+      "category": "Patient Transfer",
+      "itemType": "Rose Cottage",
+      "toBuildingId": "bereavement-center",
+      "toLocationId": "rose-cotage",
+      "toLocationType": "department"
+    }
+  ],
   "shifts": {
     "day": {
       "start": "08:00",
