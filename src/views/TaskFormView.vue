@@ -497,8 +497,8 @@ const cancel = () => {
 
 // Initialize
 onMounted(() => {
-  // If not in a shift, redirect to home
-  if (!isShiftActive.value) {
+  // Allow editing even for archived tasks (don't redirect if we're editing)
+  if (!isShiftActive.value && !props.taskId) {
     if (navigate) navigate('home')
     return
   }

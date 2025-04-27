@@ -29,9 +29,12 @@ app.provide('navigate', (route: string, params?: any) => {
   } else if (route === 'completedTasks') {
     router.push({ name: 'completedTasks' })
   } else if (route === 'taskForm') {
+    // Ensure we properly handle the taskId parameter
+    const taskId = params?.taskId || (typeof params === 'object' ? params.taskId : undefined)
+    
     router.push({
       name: 'taskForm',
-      query: params?.taskId ? { taskId: params.taskId } : undefined
+      query: taskId ? { taskId } : undefined
     })
   } else if (route === 'archive') {
     router.push({ name: 'archive' })

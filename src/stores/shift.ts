@@ -259,7 +259,7 @@ export const useShiftStore = defineStore('shift', () => {
   }
   
   /**
-   * Update an existing task
+   * Update an existing task - works with both current and archived shifts
    */
   function updateTask(taskId: string, taskData: {
     jobCategory: string;
@@ -272,57 +272,100 @@ export const useShiftStore = defineStore('shift', () => {
     completedTime?: string;
     status?: TaskStatus;
   }): Task {
-    if (!currentShift.value) {
-      throw new Error('Cannot update task without an active shift')
+    // First check in current shift
+    if (currentShift.value) {
+      const taskIndex = currentShift.value.tasks.findIndex(t => t.id === taskId)
+      
+      if (taskIndex !== -1) {
+        // Update the task with new data while preserving the ID
+        const updatedTask: Task = {
+          ...currentShift.value.tasks[taskIndex],
+          ...taskData,
+          id: taskId // Ensure ID remains the same
+        }
+        
+        // Replace the task in the array
+        currentShift.value.tasks[taskIndex] = updatedTask
+        
+        // Save updated shift to localStorage
+        localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(currentShift.value))
+        
+        console.log('Task updated in current shift:', updatedTask)
+        
+        return updatedTask
+      }
     }
     
-    const taskIndex = currentShift.value.tasks.findIndex(t => t.id === taskId)
-    
-    if (taskIndex === -1) {
-      throw new Error(`Task with ID ${taskId} not found`)
+    // If not found in current shift, check archived shifts
+    for (let i = 0; i < archivedShifts.value.length; i++) {
+      const shift = archivedShifts.value[i]
+      const taskIndex = shift.tasks.findIndex(t => t.id === taskId)
+      
+      if (taskIndex !== -1) {
+        // Update the task with new data while preserving the ID
+        const updatedTask: Task = {
+          ...shift.tasks[taskIndex],
+          ...taskData,
+          id: taskId // Ensure ID remains the same
+        }
+        
+        // Replace the task in the array
+        shift.tasks[taskIndex] = updatedTask
+        
+        // Save updated archived shifts to localStorage
+        localStorage.setItem(ARCHIVED_SHIFTS_STORAGE_KEY, JSON.stringify(archivedShifts.value))
+        
+        console.log('Task updated in archived shift:', updatedTask)
+        
+        return updatedTask
+      }
     }
     
-    // Update the task with new data while preserving the ID
-    const updatedTask: Task = {
-      ...currentShift.value.tasks[taskIndex],
-      ...taskData,
-      id: taskId // Ensure ID remains the same
-    }
-    
-    // Replace the task in the array
-    currentShift.value.tasks[taskIndex] = updatedTask
-    
-    // Save updated shift to localStorage
-    localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(currentShift.value))
-    
-    console.log('Task updated:', updatedTask)
-    
-    return updatedTask
+    // If we get here, the task wasn't found in any shift
+    throw new Error(`Task with ID ${taskId} not found in any shift`)
   }
   
   /**
-   * Delete a task
+   * Delete a task - works with both current and archived shifts
    */
   function deleteTask(taskId: string): boolean {
-    if (!currentShift.value) {
-      throw new Error('Cannot delete task without an active shift')
+    // First check in current shift
+    if (currentShift.value) {
+      const taskIndex = currentShift.value.tasks.findIndex(t => t.id === taskId)
+      
+      if (taskIndex !== -1) {
+        // Remove the task from the array
+        currentShift.value.tasks.splice(taskIndex, 1)
+        
+        // Save updated shift to localStorage
+        localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(currentShift.value))
+        
+        console.log('Task deleted from current shift:', taskId)
+        
+        return true
+      }
     }
     
-    const taskIndex = currentShift.value.tasks.findIndex(t => t.id === taskId)
-    
-    if (taskIndex === -1) {
-      throw new Error(`Task with ID ${taskId} not found`)
+    // If not found in current shift, check archived shifts
+    for (let i = 0; i < archivedShifts.value.length; i++) {
+      const shift = archivedShifts.value[i]
+      const taskIndex = shift.tasks.findIndex(t => t.id === taskId)
+      
+      if (taskIndex !== -1) {
+        // Remove the task from the array
+        shift.tasks.splice(taskIndex, 1)
+        
+        // Save updated archived shifts to localStorage
+        localStorage.setItem(ARCHIVED_SHIFTS_STORAGE_KEY, JSON.stringify(archivedShifts.value))
+        
+        console.log('Task deleted from archived shift:', taskId)
+        
+        return true
+      }
     }
     
-    // Remove the task from the array
-    currentShift.value.tasks.splice(taskIndex, 1)
-    
-    // Save updated shift to localStorage
-    localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(currentShift.value))
-    
-    console.log('Task deleted:', taskId)
-    
-    return true
+    // If we get here, the task wasn't found in any shift
+    throw new Error(`Task with ID ${taskId} not found in any shift`)
   }
   
   /**
@@ -356,12 +399,25 @@ export const useShiftStore = defineStore('shift', () => {
   }
   
   /**
-   * Get task by ID
+   * Get task by ID - search in both current and archived shifts
    */
   function getTask(taskId: string): Task | null {
-    if (!currentShift.value) return null
+    // First check in current shift
+    if (currentShift.value) {
+      const task = currentShift.value.tasks.find(t => t.id === taskId)
+      if (task) return task
+    }
     
-    return currentShift.value.tasks.find(t => t.id === taskId) || null
+    // If not found and we have archived shifts, look there
+    if (archivedShifts.value.length > 0) {
+      for (const shift of archivedShifts.value) {
+        const task = shift.tasks.find(t => t.id === taskId)
+        if (task) return task
+      }
+    }
+    
+    // Not found anywhere
+    return null
   }
   
   /**

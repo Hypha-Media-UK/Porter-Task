@@ -264,7 +264,7 @@ const confirmReopenShift = () => {
 }
 
 const editTask = (taskId: string) => {
-  if (navigate) navigate('taskForm', { taskId })
+  if (navigate) navigate('taskForm', { taskId: taskId })
 }
 
 // Initialize
