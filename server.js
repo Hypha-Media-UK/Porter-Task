@@ -3,56 +3,68 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bodyParser from 'body-parser';
+import { createServer as createViteServer } from 'vite';
 
+// Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
-const port = process.env.PORT || 3000;
+async function createServer() {
+  const app = express();
+  const port = 5173;
 
-// Middleware
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+  // Use JSON body parser
+  app.use(bodyParser.json());
 
-// Save settings API endpoint
-app.post('/api/save-settings', (req, res) => {
-  try {
-    const settingsData = req.body;
-    const settingsPath = path.join(__dirname, 'public', 'data', 'settings.json');
-    
-    // Write data to file with pretty formatting
-    fs.writeFileSync(settingsPath, JSON.stringify(settingsData, null, 2));
-    
-    console.log('Settings saved successfully');
-    res.status(200).json({ success: true, message: 'Settings saved successfully' });
-  } catch (error) {
-    console.error('Error saving settings:', error);
-    res.status(500).json({ success: false, message: 'Error saving settings', error: error.message });
-  }
-});
+  // API endpoint to save settings
+  app.post('/api/save-settings', (req, res) => {
+    try {
+      const settingsData = req.body;
+      const settingsPath = path.resolve(__dirname, 'public/data/settings.json');
+      
+      // Write the settings to the file
+      fs.writeFileSync(settingsPath, JSON.stringify(settingsData, null, 2));
+      
+      console.log('Settings saved to file:', settingsPath);
+      res.json({ success: true, message: 'Settings saved successfully' });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
 
-// Save locations API endpoint
-app.post('/api/save-locations', (req, res) => {
-  try {
-    const locationData = req.body;
-    const locationsPath = path.join(__dirname, 'public', 'data', 'locations.json');
-    
-    // Write data to file with pretty formatting
-    fs.writeFileSync(locationsPath, JSON.stringify(locationData, null, 2));
-    
-    console.log('Locations saved successfully');
-    res.status(200).json({ success: true, message: 'Locations saved successfully' });
-  } catch (error) {
-    console.error('Error saving locations:', error);
-    res.status(500).json({ success: false, message: 'Error saving locations', error: error.message });
-  }
-});
+  // API endpoint to save locations
+  app.post('/api/save-locations', (req, res) => {
+    try {
+      const locationsData = req.body;
+      const locationsPath = path.resolve(__dirname, 'public/data/locations.json');
+      
+      // Write the locations to the file
+      fs.writeFileSync(locationsPath, JSON.stringify(locationsData, null, 2));
+      
+      console.log('Locations saved to file:', locationsPath);
+      res.json({ success: true, message: 'Locations saved successfully' });
+    } catch (error) {
+      console.error('Error saving locations:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
 
-// Serve Vue.js SPA for all other routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
+  // Create Vite server in middleware mode
+  const vite = await createViteServer({
+    server: { middlewareMode: true }
+  });
+  
+  // Use vite's connect instance as middleware
+  app.use(vite.middlewares);
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  // Start the server
+  app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+    console.log(`API endpoints available for saving settings and locations`);
+  });
+}
+
+createServer().catch((err) => {
+  console.error('Error starting server:', err);
 });

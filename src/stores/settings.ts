@@ -132,7 +132,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
   
   /**
-   * Save settings to localStorage
+   * Save settings to file with localStorage fallback
    */
   async function saveSettingsToFile() {
     try {
@@ -147,13 +147,31 @@ export const useSettingsStore = defineStore('settings', () => {
       
       console.log('Saving settings:', settingsData);
       
-      // Store in localStorage so it persists between page refreshes
+      // First try to save to the actual JSON file via API
       try {
-        localStorage.setItem('porterTrackSettings', JSON.stringify(settingsData));
-        console.log('Settings saved to localStorage');
-      } catch (localErr) {
-        console.warn('Could not save to localStorage:', localErr);
-        console.info('Changes are in memory only and will be lost on refresh');
+        const response = await fetch('/api/save-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settingsData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to save settings: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Settings saved to file successfully:', result);
+      } catch (apiErr) {
+        console.warn('Could not save settings to file via API:', apiErr);
+        
+        // Fallback to localStorage if API save fails
+        try {
+          localStorage.setItem('porterTrackSettings', JSON.stringify(settingsData));
+          console.log('Settings saved to localStorage as fallback');
+        } catch (localErr) {
+          console.warn('Could not save to localStorage:', localErr);
+          console.info('Changes are in memory only and will be lost on refresh');
+        }
       }
       
       return true;
@@ -165,7 +183,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
   
   /**
-   * Save location data to file
+   * Save location data to file with localStorage fallback
    */
   async function saveLocationDataToFile() {
     try {
@@ -174,15 +192,33 @@ export const useSettingsStore = defineStore('settings', () => {
         buildings: buildings.value
       };
       
-      console.log('Location data saved in memory:', locationData);
+      console.log('Saving location data:', locationData);
       
-      // Store in localStorage
+      // First try to save to the actual JSON file via API
       try {
-        localStorage.setItem('porterTrackLocations', JSON.stringify(locationData));
-        console.log('Location data saved to localStorage');
-      } catch (localErr) {
-        console.warn('Could not save location data to localStorage:', localErr);
-        console.info('Changes are in memory only and will be lost on refresh');
+        const response = await fetch('/api/save-locations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(locationData)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to save location data: ${response.status} ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Location data saved to file successfully:', result);
+      } catch (apiErr) {
+        console.warn('Could not save location data to file via API:', apiErr);
+        
+        // Fallback to localStorage if API save fails
+        try {
+          localStorage.setItem('porterTrackLocations', JSON.stringify(locationData));
+          console.log('Location data saved to localStorage as fallback');
+        } catch (localErr) {
+          console.warn('Could not save location data to localStorage:', localErr);
+          console.info('Changes are in memory only and will be lost on refresh');
+        }
       }
       
       return true;
