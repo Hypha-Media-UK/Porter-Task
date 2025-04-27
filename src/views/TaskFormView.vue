@@ -656,22 +656,31 @@ const applyLocationDefaults = (defaults: JobCategoryDefault | undefined) => {
   }
 };
 
+// Flag to prevent automatic item type reset during initial load
+const initialJobTypeChange = ref(true);
+
 // Watch for category changes to update item types and default locations
 watch(() => formData.value.jobCategory, () => {
-  // Reset item type when category changes
-  formData.value.itemType = '';
-  
-  // Set default item type if available
-  const items = itemTypesForCategory.value;
-  if (items.length > 0) {
-    formData.value.itemType = items[0];
+  // Only reset and set default item type if this isn't the initial load with an existing task
+  if (!initialJobTypeChange.value || !isEditing.value) {
+    // Reset item type when category changes (unless it's during initial load of an existing task)
+    formData.value.itemType = '';
+    
+    // Set default item type if available
+    const items = itemTypesForCategory.value;
+    if (items.length > 0) {
+      formData.value.itemType = items[0];
+    }
   }
   
-  // Set default locations based on job category (without item type)
-  if (formData.value.jobCategory) {
+  // Only apply default locations for new tasks, not when editing
+  if (formData.value.jobCategory && !isEditing.value) {
     const defaults = settingsStore.getJobCategoryDefault(formData.value.jobCategory);
     applyLocationDefaults(defaults);
   }
+  
+  // Turn off the initial load flag after first run
+  initialJobTypeChange.value = false;
 });
 
 // Watch for item type changes to update default locations
