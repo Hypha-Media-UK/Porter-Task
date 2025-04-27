@@ -210,6 +210,7 @@
       <button 
         class="btn-primary" 
         @click="saveDefaults"
+        :disabled="!hasFromLocation && !hasToLocation"
       >
         Save Defaults
       </button>
@@ -218,7 +219,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
 import type { JobCategoryDefault } from '../../types'
 
@@ -315,6 +316,17 @@ const toLocations = computed(() => {
   return toLocationType.value === 'department' ? building.departments : building.wards;
 })
 
+// Watch for changes in location type to update the location dropdown
+watch(fromLocationType, () => {
+  // Reset the selected location ID since the available locations have changed
+  fromLocationId.value = '';
+});
+
+watch(toLocationType, () => {
+  // Reset the selected location ID since the available locations have changed
+  toLocationId.value = '';
+});
+
 // Methods
 const loadExistingDefaults = () => {
   // Try to get defaults for the specific item type first (if selected)
@@ -366,6 +378,18 @@ const loadExistingDefaults = () => {
 
 const resetFromLocation = () => {
   fromLocationId.value = '';
+  // Ensure we reset the location when changing the building
+  if (fromBuildingId.value) {
+    // Check if the current building has any departments
+    const building = buildings.value.find(b => b.id === fromBuildingId.value);
+    if (building) {
+      if (building.departments.length > 0) {
+        fromLocationType.value = 'department';
+      } else if (building.wards.length > 0) {
+        fromLocationType.value = 'ward';
+      }
+    }
+  }
 }
 
 const resetFromLocationId = () => {
@@ -374,6 +398,18 @@ const resetFromLocationId = () => {
 
 const resetToLocation = () => {
   toLocationId.value = '';
+  // Ensure we reset the location when changing the building
+  if (toBuildingId.value) {
+    // Check if the current building has any departments
+    const building = buildings.value.find(b => b.id === toBuildingId.value);
+    if (building) {
+      if (building.departments.length > 0) {
+        toLocationType.value = 'department';
+      } else if (building.wards.length > 0) {
+        toLocationType.value = 'ward';
+      }
+    }
+  }
 }
 
 const resetToLocationId = () => {
@@ -611,6 +647,11 @@ h4 {
 
 .btn-primary:hover {
   background-color: var(--color-primary-dark);
+}
+
+.btn-primary:disabled {
+  background-color: var(--color-border);
+  cursor: not-allowed;
 }
 
 .btn-danger {
