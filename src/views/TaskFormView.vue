@@ -223,9 +223,27 @@ const isShiftActive = computed(() => shiftStore.isShiftActive);
 
 const {
   jobCategories,
-  buildings,
-  porters
+  buildings
 } = settingsStore;
+
+// Get all available porters from settings, but we'll filter them based on the current shift
+const allPorters = settingsStore.porters;
+
+// Computed property for porters assigned to the current shift
+const porters = computed(() => {
+  // If editing a task from an archived shift, use all porters
+  if (isFromArchive.value) {
+    return allPorters;
+  }
+  
+  // If there's a current shift with assigned porters, use only those
+  if (shiftStore.currentShift?.assignedPorters?.length) {
+    return shiftStore.currentShift.assignedPorters;
+  }
+  
+  // Fallback to all porters if none are specifically assigned
+  return allPorters;
+});
 
 // State
 const isEditing = computed(() => !!props.taskId);

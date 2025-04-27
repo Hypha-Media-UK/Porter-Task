@@ -90,6 +90,7 @@ export interface Shift {
   startTime: string; // ISO string
   endTime?: string; // ISO string, optional if shift is still ongoing
   tasks: Task[];
+  assignedPorters?: Porter[]; // Porters assigned to this shift
 }
 
 // Route parameters

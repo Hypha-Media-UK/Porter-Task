@@ -1,7 +1,7 @@
 <template>
   <main class="home-view">
     <!-- ACTIVE SHIFT VIEW -->
-    <section v-if="isShiftActive && currentShift" class="active-shift">
+    <section v-if="isShiftActive && currentShift && currentShift.value" class="active-shift">
       <header class="top-header">
         <h1>Current Shift</h1>
       </header>
@@ -10,8 +10,8 @@
         <div class="shift-header">
           <div class="shift-title">
             <h2>{{ shiftTitle }}</h2>
-            <div class="shift-badge" :class="currentShift.type.toLowerCase()">
-              {{ currentShift.type }}
+            <div class="shift-badge" :class="currentShift.value.type.toLowerCase()">
+              {{ currentShift.value.type }}
             </div>
           </div>
           
@@ -24,7 +24,7 @@
             </div>
             <div class="supervisor-info">
               <div class="supervisor-label">Supervisor</div>
-              <div class="supervisor-name">{{ currentShift.supervisor }}</div>
+              <div class="supervisor-name">{{ currentShift.value.supervisor }}</div>
             </div>
           </div>
           
@@ -37,7 +37,7 @@
             </div>
             <div class="time-details">
               <div class="time-label">Started</div>
-              <div class="time-value">{{ formatTime(new Date(currentShift.startTime)) }}</div>
+              <div class="time-value">{{ formatTime(new Date(currentShift.value.startTime)) }}</div>
             </div>
           </div>
         </div>
@@ -45,16 +45,16 @@
         <div class="shift-progress">
           <div class="progress-label">
             <span>Task Completion</span>
-            <span>{{ Math.round((completedTasksCount / (currentShift.tasks.length || 1)) * 100) }}%</span>
+            <span>{{ Math.round((completedTasksCount / (currentShift.value.tasks.length || 1)) * 100) }}%</span>
           </div>
           <div class="progress">
-            <div class="progress-bar" :style="{ width: `${(completedTasksCount / (currentShift.tasks.length || 1)) * 100}%` }"></div>
+            <div class="progress-bar" :style="{ width: `${(completedTasksCount / (currentShift.value.tasks.length || 1)) * 100}%` }"></div>
           </div>
         </div>
         
         <div class="shift-stats">
           <div class="stat-item total">
-            <div class="stat-value">{{ currentShift.tasks.length }}</div>
+            <div class="stat-value">{{ currentShift.value.tasks.length }}</div>
             <div class="stat-label">Total Tasks</div>
           </div>
           
@@ -66,6 +66,50 @@
           <div class="stat-item completed">
             <div class="stat-value">{{ completedTasksCount }}</div>
             <div class="stat-label">Completed</div>
+          </div>
+        </div>
+
+        <!-- Porters Management Section -->
+        <div class="porters-section">
+          <h3>Porters Assignment</h3>
+          <p class="section-description">Assign porters to this shift to manage task assignments</p>
+          
+          <div class="porters-assignment">
+            <div class="porter-selection">
+              <select 
+                v-model="selectedPorter" 
+                class="form-control"
+                :disabled="!availablePorters.length"
+              >
+                <option value="" disabled>Select porter</option>
+                <option v-for="porter in availablePorters" :key="porter" :value="porter">
+                  {{ porter }}
+                </option>
+              </select>
+              <button 
+                class="btn-primary" 
+                @click="handleAddPorterToShift"
+                :disabled="!selectedPorter"
+              >
+                Add Porter
+              </button>
+            </div>
+            
+            <div v-if="assignedPorters.length === 0" class="empty-porters">
+              <p>No porters assigned to this shift yet.</p>
+            </div>
+            
+            <div v-else class="assigned-porters">
+              <h4>Assigned Porters:</h4>
+              <div class="porter-tags">
+                <div v-for="porter in assignedPorters" :key="porter" class="porter-tag">
+                  <span class="porter-name">{{ porter }}</span>
+                  <button class="remove-porter" @click="handleRemovePorterFromShift(porter)" title="Remove porter">
+                    &times;
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -128,6 +172,50 @@
             <option value="" disabled>Select Supervisor</option>
             <option v-for="sup in supervisors" :key="sup" :value="sup">{{ sup }}</option>
           </select>
+        </div>
+        
+        <!-- Porter Assignment Section -->
+        <div class="form-group porters-section">
+          <label>Porters Assignment</label>
+          <p class="section-description">Select porters who will be working during this shift</p>
+          
+          <div class="porters-assignment">
+            <div class="porter-selection">
+              <select 
+                v-model="selectedPorter" 
+                class="form-control"
+                :disabled="!availableInitialPorters.length"
+              >
+                <option value="" disabled>Select porter</option>
+                <option v-for="porter in allPorters" :key="porter" :value="porter">
+                  {{ porter }}
+                </option>
+              </select>
+              <button 
+                class="btn-primary" 
+                @click="handleAddInitialPorter"
+                :disabled="!selectedPorter"
+              >
+                Add Porter
+              </button>
+            </div>
+            
+            <div v-if="initialPorters.length === 0" class="empty-porters">
+              <p>No porters assigned to this shift yet.</p>
+            </div>
+            
+            <div v-else class="assigned-porters">
+              <h4>Assigned Porters:</h4>
+              <div class="porter-tags">
+                <div v-for="porter in initialPorters" :key="porter" class="porter-tag">
+                  <span class="porter-name">{{ porter }}</span>
+                  <button class="remove-porter" @click="handleRemoveInitialPorter(porter)" title="Remove porter">
+                    &times;
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         
         <div class="shift-actions">
@@ -256,43 +344,131 @@ const {
   currentShift,
   archivedShifts,
   startShift,
-  endShift
+  endShift,
+  addPorterToShift,
+  removePorterFromShift
 } = shiftStore
 
-const { supervisors } = settingsStore
+const { supervisors, porters: allPorters } = settingsStore
 
 // Local state
 const shiftType = ref<'Day' | 'Night'>('Day')
 const supervisor = ref('')
 const showEndShiftConfirm = ref(false)
+const selectedPorter = ref('')
+const initialPorters = ref<string[]>([])
 
 // Computed
 const shiftTitle = computed(() => {
-  if (!currentShift) return ''
+  if (!currentShift.value) return ''
   
-  const date = new Date(currentShift.date)
+  const date = new Date(currentShift.value.date)
   return `${formatDate(date)}`
 })
 
 const pendingTasksCount = computed(() => {
-  if (!currentShift) return 0
-  return currentShift.tasks.filter(task => task.status === 'Pending').length
+  if (!currentShift.value) return 0
+  return currentShift.value.tasks.filter(task => task.status === 'Pending').length
 })
 
 const completedTasksCount = computed(() => {
-  if (!currentShift) return 0
-  return currentShift.tasks.filter(task => task.status === 'Completed').length
+  if (!currentShift.value) return 0
+  return currentShift.value.tasks.filter(task => task.status === 'Completed').length
 })
 
 const recentShifts = computed(() => {
-  return archivedShifts.slice(0, 3)
+  if (!archivedShifts.value) return []
+  return archivedShifts.value.slice(0, 3)
+})
+
+// Computed properties for porter management
+const assignedPorters = computed(() => {
+  if (!currentShift.value || !currentShift.value.assignedPorters) return []
+  return currentShift.value.assignedPorters
+})
+
+const availablePorters = computed(() => {
+  // Filter out porters that are already assigned
+  return allPorters.filter(porter => !assignedPorters.value.includes(porter))
+})
+
+// Computed properties for initial porter assignment (before shift starts)
+const availableInitialPorters = computed(() => {
+  // Filter out porters that are already in the initialPorters list
+  return allPorters.filter(porter => !initialPorters.value.includes(porter))
 })
 
 // Methods
 const startSpecificShift = (type: 'Day' | 'Night') => {
-  if (supervisor.value) {
-    startShift(type, supervisor.value)
-    if (navigate) navigate('tasks')
+  try {
+    if (!supervisor.value) {
+      console.error('No supervisor selected');
+      return;
+    }
+
+    console.log(`Starting ${type} shift with supervisor:`, supervisor.value);
+    
+    // Check if there's already an active shift
+    if (isShiftActive.value && currentShift.value) {
+      console.log('There is already an active shift. Ending current shift before starting a new one.');
+      
+      // End the current shift
+      endShift();
+      
+      // Reload the page to fully reset the state
+      window.location.reload();
+      return;
+    }
+    
+    // Clear any existing shift data from localStorage
+    localStorage.removeItem('porter-track-current-shift');
+    
+    // Start the shift with the supervisor
+    const newShift = startShift(type, supervisor.value);
+    console.log('New shift created:', newShift);
+    
+    // Add any porters that were pre-selected
+    if (initialPorters.value && initialPorters.value.length > 0) {
+      console.log(`Adding ${initialPorters.value.length} porters to shift:`, initialPorters.value);
+      
+      initialPorters.value.forEach(porter => {
+        try {
+          const success = addPorterToShift(porter);
+          console.log(`Added porter ${porter}: ${success ? 'Success' : 'Failed'}`);
+        } catch (err) {
+          console.error(`Error adding porter ${porter}:`, err);
+        }
+      });
+      
+      // Clear the initial porters list
+      initialPorters.value = [];
+    }
+    
+    // Force a UI refresh by navigating to the tasks page
+    console.log('Navigating to tasks view...');
+    window.location.href = '/tasks';
+  } catch (error) {
+    console.error('Critical error starting shift:', error);
+    alert('Error starting shift: ' + (error instanceof Error ? error.message : String(error)));
+  }
+}
+
+// Methods for initial porter assignment (before shift starts)
+const handleAddInitialPorter = () => {
+  if (selectedPorter.value && !initialPorters.value.includes(selectedPorter.value)) {
+    console.log('Adding porter to initial list:', selectedPorter.value);
+    initialPorters.value.push(selectedPorter.value);
+    // Reset selection after successful add
+    selectedPorter.value = '';
+  } else {
+    console.warn('Porter already in list or no porter selected');
+  }
+}
+
+const handleRemoveInitialPorter = (porter: string) => {
+  const index = initialPorters.value.indexOf(porter)
+  if (index !== -1) {
+    initialPorters.value.splice(index, 1)
   }
 }
 
@@ -310,6 +486,18 @@ const viewShiftDetails = (shiftId: string) => {
 
 const navigateToArchive = () => {
   if (navigate) navigate('archive')
+}
+
+const handleAddPorterToShift = () => {
+  if (selectedPorter.value) {
+    addPorterToShift(selectedPorter.value)
+    // Reset selection after adding
+    selectedPorter.value = ''
+  }
+}
+
+const handleRemovePorterFromShift = (porter: string) => {
+  removePorterFromShift(porter)
 }
 
 // Initialize form data
@@ -367,21 +555,21 @@ h3 {
   margin-top: var(--spacing-lg);
 }
 
+h4 {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+  margin-bottom: var(--spacing-sm);
+  margin-top: 0;
+}
+
 p {
   color: var(--color-text-secondary);
   line-height: 1.5;
 }
 
 /* Card styles */
-.card {
-  background-color: var(--color-card);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
-}
-
-/* Active Shift styles */
-.shift-card {
+.card, .shift-card {
   background-color: var(--color-card);
   border-radius: var(--border-radius-lg);
   padding: var(--spacing-lg);
@@ -421,261 +609,51 @@ p {
   background-color: var(--color-secondary);
 }
 
-.shift-supervisor {
-  display: flex;
-  align-items: flex-start;
-  margin-bottom: var(--spacing-sm);
+.porters-section {
+  background-color: var(--color-card);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-md);
 }
 
-.supervisor-avatar {
-  width: 32px;
-  height: 32px;
+.porter-selection {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.porter-selection select {
+  flex: 1;
+}
+
+.empty-porters {
+  background-color: var(--color-secondary-light);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  text-align: center;
+}
+
+.porter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.porter-tag {
   display: flex;
   align-items: center;
-  justify-content: center;
   background-color: var(--color-primary-light);
   color: var(--color-primary);
-  border-radius: 50%;
-  margin-right: var(--spacing-sm);
-}
-
-.supervisor-info {
-  flex: 1;
-}
-
-.supervisor-label, .time-label {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  margin-bottom: 2px;
-}
-
-.supervisor-name, .time-value {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
-}
-
-.shift-time {
-  display: flex;
-  align-items: flex-start;
-}
-
-.time-icon {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-secondary-light);
-  color: var(--color-secondary);
-  border-radius: 50%;
-  margin-right: var(--spacing-sm);
-}
-
-.shift-progress {
-  margin: var(--spacing-md) 0;
-}
-
-.progress-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--font-size-sm);
-  margin-bottom: var(--spacing-xs);
-  color: var(--color-text-secondary);
-}
-
-.progress {
-  height: 8px;
-  background-color: var(--color-border-light);
+  padding: var(--spacing-xs) var(--spacing-sm);
   border-radius: var(--border-radius-pill);
-  overflow: hidden;
 }
 
-.progress-bar {
-  height: 100%;
-  background-color: var(--color-success);
-  border-radius: var(--border-radius-pill);
-  transition: width 0.5s ease;
-}
-
-.shift-stats {
-  display: flex;
-  justify-content: space-between;
-  margin: var(--spacing-lg) 0;
-  background-color: var(--color-secondary-light);
-  border-radius: var(--border-radius);
-  padding: var(--spacing-md);
-}
-
-.stat-item {
-  text-align: center;
-  flex: 1;
-}
-
-.stat-value {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--spacing-xs);
-}
-
-.stat-item.total .stat-value {
-  color: var(--color-primary);
-}
-
-.stat-item.pending .stat-value {
-  color: var(--color-pending);
-}
-
-.stat-item.completed .stat-value {
-  color: var(--color-success);
-}
-
-.stat-label {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-}
-
-.shift-actions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-lg);
-}
-
-.shift-actions button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-md);
-  flex: 1;
-  padding: var(--spacing-md);
-}
-
-.btn-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-@media (min-width: 768px) {
-  .shift-actions {
-    flex-direction: row;
-  }
-}
-
-/* Quick Actions Section */
-.quick-actions-section {
-  margin-top: var(--spacing-lg);
-}
-
-.quick-action-card {
-  display: flex;
-  align-items: center;
-  background-color: var(--color-card);
-  border-radius: var(--border-radius);
-  padding: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
-  cursor: pointer;
-  transition: transform var(--transition-fast);
-}
-
-.quick-action-card:active {
-  transform: scale(0.98);
-}
-
-.action-icon {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--border-radius-sm);
-  margin-right: var(--spacing-md);
-}
-
-.action-icon.pending {
-  background-color: rgba(var(--color-pending-rgb), 0.1);
-  color: var(--color-pending);
-}
-
-.action-content {
-  flex: 1;
-}
-
-.action-title {
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-xs);
-}
-
-.action-subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.action-chevron {
-  color: var(--color-text-light);
-}
-
-/* Welcome card */
-.welcome-card {
-  background-color: var(--color-card);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-xl);
-  margin-bottom: var(--spacing-lg);
-  text-align: center;
-}
-
-.welcome-icon {
-  display: flex;
-  justify-content: center;
-  margin-bottom: var(--spacing-md);
-  color: var(--color-primary);
-}
-
-/* Shift Form */
-.shift-form {
-  padding: var(--spacing-lg);
-}
-
-.form-group {
-  margin-bottom: var(--spacing-lg);
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: var(--spacing-sm);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-}
-
-/* Recent Shifts styles */
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-sm);
-}
-
-.section-header h3 {
-  margin: 0;
-}
-
-.view-all-link {
-  color: var(--color-primary);
+.remove-porter {
   background: none;
   border: none;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
+  color: var(--color-primary);
   cursor: pointer;
-  padding: var(--spacing-xs) var(--spacing-sm);
-}
-
-.shift-list {
-  background-color: var(--color-card);
-  border-radius: var(--border-radius-lg);
-  overflow: hidden;
 }
 
 .shift-list-item {
@@ -684,154 +662,9 @@ p {
   display: flex;
   align-items: center;
   cursor: pointer;
-  transition: background-color var(--transition-fast);
 }
 
 .shift-list-item:last-child {
   border-bottom: none;
-}
-
-.shift-list-item:active {
-  background-color: rgba(var(--color-primary-rgb), 0.05);
-}
-
-.shift-list-icon {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--border-radius-sm);
-  margin-right: var(--spacing-md);
-}
-
-.shift-list-icon.day {
-  background-color: rgba(var(--color-primary-rgb), 0.1);
-  color: var(--color-primary);
-}
-
-.shift-list-icon.night {
-  background-color: rgba(var(--color-secondary-rgb), 0.1);
-  color: var(--color-secondary);
-}
-
-.shift-list-content {
-  flex: 1;
-}
-
-.shift-list-title {
-  font-weight: var(--font-weight-medium);
-  margin-bottom: 2px;
-}
-
-.shift-list-details {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.separator {
-  margin: 0 var(--spacing-xs);
-}
-
-.shift-list-chevron {
-  color: var(--color-text-light);
-}
-
-/* Modal styles - iOS style */
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  z-index: var(--z-index-modal);
-  animation: fadeIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.modal-content {
-  background-color: var(--color-card);
-  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  animation: slideInUp 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-  padding-bottom: max(var(--spacing-md), var(--safe-area-inset-bottom));
-}
-
-.modal-handle {
-  width: 36px;
-  height: 5px;
-  background-color: var(--color-border);
-  border-radius: 3px;
-  margin: var(--spacing-sm) auto;
-}
-
-.modal-header {
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid var(--color-border-light);
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  text-align: center;
-}
-
-.modal-body {
-  padding: var(--spacing-lg);
-}
-
-.modal-body p {
-  margin: 0;
-  text-align: center;
-}
-
-.modal-actions {
-  padding: var(--spacing-md) var(--spacing-lg);
-  display: flex;
-  gap: var(--spacing-md);
-}
-
-.modal-actions button {
-  flex: 1;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideInUp {
-  from {
-    transform: translateY(50px);
-    opacity: 0.8;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Responsive adjustments */
-@media (min-width: 768px) {
-  .shift-actions {
-    justify-content: flex-end;
-  }
-  
-  .shift-actions button {
-    flex: 0 0 auto;
-    min-width: 150px;
-  }
 }
 </style>

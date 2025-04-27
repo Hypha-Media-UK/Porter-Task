@@ -140,7 +140,8 @@ export const useShiftStore = defineStore('shift', () => {
       type,
       supervisor,
       startTime: now.toISOString(),
-      tasks: []
+      tasks: [],
+      assignedPorters: [] // Initialize with empty array
     }
     
     currentShift.value = shift
@@ -151,6 +152,61 @@ export const useShiftStore = defineStore('shift', () => {
     console.log('Shift started:', shift)
     
     return shift
+  }
+  
+  /**
+   * Add a porter to the current shift
+   */
+  function addPorterToShift(porterName: string) {
+    if (!currentShift.value) {
+      throw new Error('No active shift to add porter to')
+    }
+    
+    // Initialize assignedPorters array if it doesn't exist
+    if (!currentShift.value.assignedPorters) {
+      currentShift.value.assignedPorters = []
+    }
+    
+    // Check if porter is already assigned
+    if (currentShift.value.assignedPorters.includes(porterName)) {
+      console.warn(`Porter ${porterName} is already assigned to this shift`)
+      return false
+    }
+    
+    // Add porter to shift
+    currentShift.value.assignedPorters.push(porterName)
+    
+    // Save to localStorage
+    localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(currentShift.value))
+    
+    console.log(`Porter ${porterName} added to shift`)
+    return true
+  }
+  
+  /**
+   * Remove a porter from the current shift
+   */
+  function removePorterFromShift(porterName: string) {
+    if (!currentShift.value || !currentShift.value.assignedPorters) {
+      throw new Error('No active shift or no assigned porters')
+    }
+    
+    // Find porter index
+    const porterIndex = currentShift.value.assignedPorters.indexOf(porterName)
+    
+    if (porterIndex === -1) {
+      console.warn(`Porter ${porterName} is not assigned to this shift`)
+      return false
+    }
+    
+    // Remove porter from shift
+    currentShift.value.assignedPorters.splice(porterIndex, 1)
+    
+    // Save to localStorage
+    localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(currentShift.value))
+    
+    console.log(`Porter ${porterName} removed from shift`)
+    return true
   }
   
   /**
@@ -642,6 +698,8 @@ export const useShiftStore = defineStore('shift', () => {
     getShift,
     getTask,
     deleteShift,
-    reopenShift
+    reopenShift,
+    addPorterToShift,
+    removePorterFromShift
   }
 })
