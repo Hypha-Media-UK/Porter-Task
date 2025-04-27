@@ -1,49 +1,43 @@
 <template>
-  <div class="pending-tasks-view">
-    <div class="tasks-header">
+  <main class="pending-tasks-view">
+    <header class="tasks-header">
       <h1>Pending Tasks</h1>
       
       <div v-if="pendingTasks.length > 0" class="tasks-count">
         {{ pendingTasks.length }} {{ pendingTasks.length === 1 ? 'task' : 'tasks' }}
       </div>
-    </div>
+    </header>
     
-    <div class="content">
-      <div v-if="isLoading" class="loading-state">
-        <div class="spinner"></div>
-        <p>Loading tasks...</p>
+    <section v-if="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading tasks...</p>
+    </section>
+    
+    <section v-else-if="pendingTasks.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          <path d="M12 11v6"></path>
+          <path d="M9 18h6"></path>
+        </svg>
       </div>
-      
-      <div v-else-if="pendingTasks.length === 0" class="empty-state">
-        <div class="empty-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-            <path d="M12 11v6"></path>
-            <path d="M9 18h6"></path>
-          </svg>
-        </div>
-        <h3>No Pending Tasks</h3>
-        <p>There are no tasks awaiting completion.</p>
-        <button class="btn-primary" @click="navigateToTaskForm">
-          Create New Task
-        </button>
-      </div>
-      
-      <div v-else class="tasks-list">
-        <div 
-          v-for="task in pendingTasks" 
-          :key="task.id" 
-          class="task-item"
-        >
-          <TaskCard 
-            :task="task" 
-            @complete="completeTask"
-            @click="viewTaskDetail(task.id)"
-          />
-        </div>
-      </div>
-    </div>
+      <h3>No Pending Tasks</h3>
+      <p>There are no tasks awaiting completion.</p>
+      <button class="btn-primary" @click="navigateToTaskForm">
+        Create New Task
+      </button>
+    </section>
+    
+    <ul v-else class="tasks-list">
+      <li v-for="task in pendingTasks" :key="task.id" class="task-item">
+        <TaskCard 
+          :task="task" 
+          @complete="completeTask"
+          @click="viewTaskDetail(task.id)"
+        />
+      </li>
+    </ul>
     
     <div class="tasks-actions">
       <button class="btn-primary" @click="navigateToTaskForm">
@@ -53,7 +47,7 @@
     </div>
     
     <TabNavigation current-route="tasks" @navigate="navigate" />
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
@@ -89,14 +83,18 @@ const navigateToTaskForm = () => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-bottom: 70px; /* Space for tab navigation */
+  padding: var(--spacing-md);
+  padding-bottom: calc(70px + var(--safe-area-inset-bottom));
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .tasks-header {
-  padding: var(--spacing-md);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: var(--spacing-md);
 }
 
 h1 {
@@ -114,24 +112,22 @@ h1 {
   border-radius: var(--border-radius-pill);
 }
 
-.content {
-  flex: 1;
-  padding: 0 var(--spacing-md);
-  overflow-y: auto;
-}
-
 .tasks-list {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
   padding-bottom: var(--spacing-xl);
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  flex: 1;
 }
 
 .tasks-actions {
   padding: var(--spacing-md);
+  margin: 0 calc(-1 * var(--spacing-md));
   border-top: 1px solid var(--color-border-light);
   background-color: white;
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .plus-icon {
@@ -147,7 +143,7 @@ h1 {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: var(--spacing-2xl) var(--spacing-md);
+  padding: var(--spacing-2xl) 0;
   flex: 1;
   color: var(--color-text-light);
 }
@@ -181,13 +177,6 @@ h1 {
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@media (min-width: 768px) {
-  .pending-tasks-view {
-    max-width: 800px;
-    margin: 0 auto;
   }
 }
 </style>

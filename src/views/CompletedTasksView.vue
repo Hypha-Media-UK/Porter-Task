@@ -1,47 +1,45 @@
 <template>
-  <div class="completed-tasks-view">
-    <div class="tasks-header">
+  <main class="completed-tasks-view">
+    <header class="tasks-header">
       <h1>Completed Tasks</h1>
       
       <div v-if="completedTasks.length > 0" class="tasks-count">
         {{ completedTasks.length }} {{ completedTasks.length === 1 ? 'task' : 'tasks' }}
       </div>
-    </div>
+    </header>
     
-    <div class="content">
-      <div v-if="isLoading" class="loading-state">
-        <div class="spinner"></div>
-        <p>Loading tasks...</p>
+    <section v-if="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading tasks...</p>
+    </section>
+    
+    <section v-else-if="completedTasks.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
       </div>
-      
-      <div v-else-if="completedTasks.length === 0" class="empty-state">
-        <div class="empty-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-          </svg>
-        </div>
-        <h3>No Completed Tasks</h3>
-        <p>There are no completed tasks for this shift yet.</p>
-        <button class="btn-primary" @click="navigateToPendingTasks">
-          View Pending Tasks
-        </button>
-      </div>
-      
-      <div v-else class="tasks-list">
-        <div 
-          v-for="task in completedTasks" 
-          :key="task.id" 
-          class="task-item"
-          @click="viewTaskDetail(task.id)"
-        >
-          <TaskCard :task="task" />
-        </div>
-      </div>
-    </div>
+      <h3>No Completed Tasks</h3>
+      <p>There are no completed tasks for this shift yet.</p>
+      <button class="btn-primary" @click="navigateToPendingTasks">
+        View Pending Tasks
+      </button>
+    </section>
+    
+    <ul v-else class="tasks-list">
+      <li 
+        v-for="task in completedTasks" 
+        :key="task.id" 
+        class="task-item"
+        @click="viewTaskDetail(task.id)"
+      >
+        <TaskCard :task="task" />
+      </li>
+    </ul>
     
     <TabNavigation current-route="tasks" @navigate="navigate" />
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
@@ -73,14 +71,18 @@ const navigateToPendingTasks = () => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-bottom: 70px; /* Space for tab navigation */
+  padding: var(--spacing-md);
+  padding-bottom: calc(70px + var(--safe-area-inset-bottom));
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .tasks-header {
-  padding: var(--spacing-md);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: var(--spacing-md);
 }
 
 h1 {
@@ -98,17 +100,15 @@ h1 {
   border-radius: var(--border-radius-pill);
 }
 
-.content {
-  flex: 1;
-  padding: 0 var(--spacing-md);
-  overflow-y: auto;
-}
-
 .tasks-list {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
   padding-bottom: var(--spacing-xl);
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+  flex: 1;
 }
 
 /* Empty and loading states */
@@ -118,7 +118,7 @@ h1 {
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: var(--spacing-2xl) var(--spacing-md);
+  padding: var(--spacing-2xl) 0;
   flex: 1;
   color: var(--color-text-light);
 }
@@ -152,13 +152,6 @@ h1 {
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@media (min-width: 768px) {
-  .completed-tasks-view {
-    max-width: 800px;
-    margin: 0 auto;
   }
 }
 </style>

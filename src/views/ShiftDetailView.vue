@@ -121,7 +121,7 @@
             :key="task.id" 
             class="task-item"
           >
-            <article class="shift-detail-task">
+            <article class="shift-detail-task" @click="editTask(task.id)">
               <div class="task-status" :class="task.status.toLowerCase()"></div>
               <div class="task-info">
                 <div class="task-header">
@@ -137,6 +137,13 @@
                   Completed: {{ formatTime(new Date(task.completedTime)) }}
                 </div>
               </div>
+              <button class="edit-button" aria-label="Edit task">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                <span>Edit</span>
+              </button>
             </article>
           </li>
         </ul>
@@ -254,6 +261,10 @@ const confirmReopenShift = () => {
       alert('Could not reopen shift. Another shift might be active.')
     }
   }
+}
+
+const editTask = (taskId: string) => {
+  if (navigate) navigate('taskForm', { taskId })
 }
 
 // Initialize
@@ -470,6 +481,8 @@ watch(() => props.shiftId, loadShift)
   border-radius: var(--border-radius);
   overflow: hidden;
   background-color: white;
+  cursor: pointer;
+  position: relative;
 }
 
 .task-status {
@@ -488,6 +501,50 @@ watch(() => props.shiftId, loadShift)
 .task-info {
   flex: 1;
   padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.edit-button {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--spacing-md);
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-sm);
+  gap: var(--spacing-xs);
+}
+
+.edit-button span {
+  display: none;
+}
+
+.shift-detail-task:hover .edit-button {
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-xs) var(--spacing-md);
+}
+
+.shift-detail-task:hover .edit-button span {
+  display: inline;
+}
+
+/* Add a subtle indicator that items are clickable */
+.shift-detail-task::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  pointer-events: none;
+  transition: background-color var(--transition-fast);
+}
+
+.shift-detail-task:hover::after {
+  background-color: rgba(0, 0, 0, 0.02);
 }
 
 .task-header {

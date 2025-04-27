@@ -2,18 +2,19 @@
   <header class="header">
     <div class="header-left">
       <!-- Back button (only shown when needed) -->
-      <button v-if="shouldShowBackButton" class="back-button" @click="goBack">
+      <button v-if="shouldShowBackButton" class="back-button" @click="goBack" aria-label="Go back">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M19 12H5M12 19l-7-7 7-7"/>
         </svg>
       </button>
       
-      <!-- Navigation icons (now on left side as requested) -->
-      <div class="nav-icons">
-        <!-- Home Icon (without active state) -->
+      <!-- Navigation icons (on left side) -->
+      <nav class="nav-icons">
+        <!-- Home Icon -->
         <button 
           class="nav-button"
           @click="navigateTo('/')"
+          aria-label="Home"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
@@ -26,6 +27,7 @@
           class="nav-button"
           :class="{ active: routePath === '/archive' }"
           @click="navigateTo('/archive')"
+          aria-label="Archive"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
@@ -38,16 +40,17 @@
           class="nav-button"
           :class="{ active: routePath === '/settings' }"
           @click="navigateTo('/settings')"
+          aria-label="Settings"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
         </button>
-      </div>
+      </nav>
     </div>
     
-    <!-- Page title (not shown on home screen) -->
+    <!-- Page title -->
     <h1 v-if="routePath === '/tasks'" class="page-title">{{ currentShiftTitle }}</h1>
     <h1 v-else-if="routePath === '/tasks/pending'" class="page-title">Pending Tasks</h1>
     <h1 v-else-if="routePath === '/tasks/completed'" class="page-title">Completed Tasks</h1>
@@ -58,26 +61,27 @@
       {{ taskId ? 'Edit Task' : 'New Task' }}
     </h1>
     
-    <!-- Tasks Icon (now on right side with permanent active state) -->
+    <!-- Tasks Icon on right side -->
     <div class="header-right">
       <button 
         v-if="isShiftActive" 
         class="nav-button tasks-button active"
         @click="navigateTo('/tasks')"
+        aria-label="Tasks"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
           <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
           <path d="M9 14l2 2 4-4"></path>
         </svg>
-        <span v-if="pendingTasksCount > 0" class="badge-count">{{ pendingTasksCount }}</span>
+        <span v-if="pendingTasksCount > 0" class="badge-count" aria-label="{{ pendingTasksCount }} pending tasks">{{ pendingTasksCount }}</span>
       </button>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, inject } from 'vue'
 import type { Router, RouteLocationNormalized } from 'vue-router'
 import { useShiftStore } from '../stores/shift'
 import { formatDate } from '../utils/date'
@@ -144,24 +148,22 @@ const navigateTo = (path) => {
     router.push(path)
   }
 }
-
-// Make sure 'inject' is defined
-import { inject } from 'vue'
 </script>
 
 <style scoped>
 .header {
+  --header-height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-sm) var(--spacing-md);
   background-color: var(--color-primary);
   color: white;
-  height: 60px;
+  height: var(--header-height);
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .header-left {
@@ -207,8 +209,9 @@ h1 {
   transition: background-color var(--transition-fast);
 }
 
-.back-button:hover {
+.back-button:hover, .back-button:focus {
   background-color: rgba(255, 255, 255, 0.1);
+  outline: none;
 }
 
 .nav-icons {
@@ -236,9 +239,10 @@ h1 {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
-.nav-button:hover {
+.nav-button:hover, .nav-button:focus {
   color: white;
   background-color: rgba(255, 255, 255, 0.1);
+  outline: none;
 }
 
 .badge-count {
@@ -260,7 +264,8 @@ h1 {
 
 @media (min-width: 768px) {
   .header {
-    height: 70px;
+    --header-height: 70px;
+    height: var(--header-height);
     padding: var(--spacing-md) var(--spacing-lg);
   }
   

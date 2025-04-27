@@ -5,6 +5,7 @@
       class="nav-tab" 
       :class="{ active: currentRoute === 'tasks' }" 
       @click="navigate('tasks')"
+      aria-label="Tasks"
     >
       <div class="nav-tab-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -12,7 +13,7 @@
           <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
           <path d="M9 14l2 2 4-4"></path>
         </svg>
-        <span v-if="pendingTasksCount > 0" class="badge-count">{{ pendingTasksCount }}</span>
+        <span v-if="pendingTasksCount > 0" class="badge-count" aria-label="{{ pendingTasksCount }} pending tasks">{{ pendingTasksCount }}</span>
       </div>
       <span>Tasks</span>
     </button>
@@ -21,6 +22,7 @@
       class="nav-tab" 
       :class="{ active: currentRoute === 'home' }" 
       @click="navigate('home')"
+      aria-label="Home"
     >
       <div class="nav-tab-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -31,13 +33,11 @@
       <span>Home</span>
     </button>
     
-    <!-- Placeholder spacer for layout balance -->
-    <div class="nav-spacer"></div>
-    
     <button 
       class="nav-tab" 
       :class="{ active: currentRoute === 'archive' }" 
       @click="navigate('archive')"
+      aria-label="Archive"
     >
       <div class="nav-tab-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -52,6 +52,7 @@
       class="nav-tab" 
       :class="{ active: currentRoute === 'settings' }" 
       @click="navigate('settings')"
+      aria-label="Settings"
     >
       <div class="nav-tab-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -94,9 +95,19 @@ function navigate(route: string, params?: RouteParams) {
 </script>
 
 <style scoped>
-/* Hide the tab navigation since we've moved it to the header */
 .tab-navigation {
-  display: none; /* Hide the bottom navigation */
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background-color: white;
+  border-top: 1px solid var(--color-border-light);
+  z-index: var(--z-index-nav);
+  padding-bottom: var(--safe-area-inset-bottom);
 }
 
 .nav-tab {
@@ -127,11 +138,6 @@ function navigate(route: string, params?: RouteParams) {
   color: var(--color-primary);
 }
 
-.nav-spacer {
-  flex: 1;
-  min-width: 70px;
-}
-
 .badge-count {
   position: absolute;
   top: -6px;
@@ -147,39 +153,6 @@ function navigate(route: string, params?: RouteParams) {
   justify-content: center;
   border-radius: 9px;
   padding: 0 4px;
-}
-
-/* Floating action button in the center */
-.fab-container {
-  position: relative;
-  width: 70px;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  z-index: 2;
-}
-
-.fab-button {
-  position: absolute;
-  bottom: 25px;
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-  background-color: var(--color-primary);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--box-shadow-md);
-  border: none;
-  cursor: pointer;
-  transform: translateY(-20px);
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.fab-button:active {
-  transform: translateY(-18px);
-  box-shadow: var(--box-shadow);
 }
 
 @media (min-width: 768px) {
