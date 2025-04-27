@@ -93,29 +93,29 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, onMounted } from 'vue'
+import { reactive, onMounted, watch } from 'vue'
+import { useSettingsStore } from '@/stores/settings'
 
-// Local state
+// Get the settings store
+const settingsStore = useSettingsStore()
+
+// Local state with storage settings
 const settings = reactive({
   storage: {
     type: 'local',
     autoBackup: true
   },
-  shifts: {
-    day: {
-      start: '08:00',
-      end: '16:00'
-    },
-    night: {
-      start: '20:00',
-      end: '04:00'
-    }
-  }
+  shifts: settingsStore.shifts
 })
 
-// Initialize settings (could be loaded from a store or API in a real app)
+// Watch for changes to the shifts and save them to the store
+watch(() => settings.shifts, (newShifts) => {
+  settingsStore.updateSettings({ shifts: newShifts })
+}, { deep: true })
+
+// Initialize settings from the store
 onMounted(() => {
-  // Any initialization logic would go here
+  // Any additional initialization logic would go here
 })
 </script>
 

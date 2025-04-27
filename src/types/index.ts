@@ -27,10 +27,23 @@ export interface JobCategoryDefault {
   toLocationType?: 'department' | 'ward';
 }
 
+// Shift schedule types
+export interface ShiftTime {
+  start: string; // Format: "HH:MM"
+  end: string;   // Format: "HH:MM"
+}
+
+export interface ShiftSchedule {
+  day: ShiftTime;
+  night: ShiftTime;
+}
+
 export interface SettingsData {
   supervisors?: Supervisor[];
   porters?: Porter[];
   jobCategories?: JobCategoriesMap;
+  jobCategoryDefaults?: JobCategoryDefault[];
+  shifts?: ShiftSchedule;
   [key: string]: any;
 }
 

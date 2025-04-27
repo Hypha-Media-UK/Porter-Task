@@ -43,5 +43,15 @@
       "Documents"
     ]
   },
-  "jobCategoryDefaults": []
+  "jobCategoryDefaults": [],
+  "shifts": {
+    "day": {
+      "start": "08:00",
+      "end": "16:00"
+    },
+    "night": {
+      "start": "20:00",
+      "end": "04:00"
+    }
+  }
 }

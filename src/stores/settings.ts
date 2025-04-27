@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { JobCategoriesMap, SettingsData, Building, LocationsData, Porter, JobCategoryDefault } from '@/types'
+import type { JobCategoriesMap, SettingsData, Building, LocationsData, Porter, JobCategoryDefault, ShiftSchedule } from '@/types'
 
 /**
  * Store for application settings and location data
@@ -12,6 +12,10 @@ export const useSettingsStore = defineStore('settings', () => {
   const jobCategories = ref<JobCategoriesMap>({})
   const buildings = ref<Building[]>([])
   const jobCategoryDefaults = ref<JobCategoryDefault[]>([])
+  const shifts = ref<ShiftSchedule>({
+    day: { start: '08:00', end: '16:00' },
+    night: { start: '20:00', end: '04:00' }
+  })
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   
@@ -40,10 +44,25 @@ export const useSettingsStore = defineStore('settings', () => {
   }
   
   /**
-   * Load settings from API/JSON
+   * Load settings from API/JSON and localStorage
    */
   async function loadSettings() {
     try {
+      // First try to load from localStorage
+      const localSettings = localStorage.getItem('porterTrackSettings')
+      if (localSettings) {
+        try {
+          const data: SettingsData = JSON.parse(localSettings)
+          // Update state from localStorage
+          updateStateFromData(data)
+          console.log('Settings loaded from localStorage')
+          return true
+        } catch (localErr) {
+          console.warn('Error parsing localStorage settings, falling back to JSON file:', localErr)
+        }
+      }
+      
+      // Fallback to the JSON file
       const response = await fetch('/data/settings.json')
       
       if (!response.ok) {
@@ -52,28 +71,39 @@ export const useSettingsStore = defineStore('settings', () => {
       
       const data: SettingsData = await response.json()
       
-      // Update state
-      if (data.supervisors) {
-        supervisors.value = data.supervisors
-      }
-      
-      if (data.porters) {
-        porters.value = data.porters
-      }
-      
-      if (data.jobCategories) {
-        jobCategories.value = data.jobCategories
-      }
-      
-      if (data.jobCategoryDefaults) {
-        jobCategoryDefaults.value = data.jobCategoryDefaults
-      }
+      // Update state from JSON file
+      updateStateFromData(data)
       
       return true
     } catch (err) {
       console.error('Error loading settings:', err)
       error.value = err instanceof Error ? err.message : 'Failed to load settings'
       throw err
+    }
+  }
+  
+  /**
+   * Update state from settings data
+   */
+  function updateStateFromData(data: SettingsData) {
+    if (data.supervisors) {
+      supervisors.value = data.supervisors
+    }
+    
+    if (data.porters) {
+      porters.value = data.porters
+    }
+    
+    if (data.jobCategories) {
+      jobCategories.value = data.jobCategories
+    }
+    
+    if (data.jobCategoryDefaults) {
+      jobCategoryDefaults.value = data.jobCategoryDefaults
+    }
+    
+    if (data.shifts) {
+      shifts.value = data.shifts
     }
   }
   
@@ -102,7 +132,7 @@ export const useSettingsStore = defineStore('settings', () => {
   }
   
   /**
-   * Save settings to file
+   * Save settings to localStorage
    */
   async function saveSettingsToFile() {
     try {
@@ -111,47 +141,24 @@ export const useSettingsStore = defineStore('settings', () => {
         supervisors: supervisors.value,
         porters: porters.value,
         jobCategories: jobCategories.value,
-        jobCategoryDefaults: jobCategoryDefaults.value
+        jobCategoryDefaults: jobCategoryDefaults.value,
+        shifts: shifts.value
       };
       
-      // In a real production app, we would use an API endpoint to persist data
-      // Since this demo app is running in a web browser context that can't directly 
-      // write to files on the filesystem, we're simulating what would happen in a 
-      // real backend implementation
+      console.log('Saving settings:', settingsData);
       
-      // On a real backend with Node.js, we would do something like:
-      // const fs = require('fs');
-      // fs.writeFileSync('/public/data/settings.json', JSON.stringify(settingsData, null, 2));
-      
-      console.log('Settings that would be saved to file:', settingsData);
-      
-      // For a complete implementation, we'd need a server-side endpoint like:
-      // await fetch('/api/settings', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(settingsData)
-      // });
-      
-      // For demo purposes, saving to the actual file
+      // Store in localStorage so it persists between page refreshes
       try {
-        await fetch('/api/save-settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(settingsData)
-        });
-        console.log('Settings saved to file successfully');
-      } catch (saveErr) {
-        console.warn('Could not save settings to file via API:', saveErr);
-        // Fallback info message
-        console.info(
-          'Note: In a production app, this would save to /public/data/settings.json.\n' +
-          'Changes are being tracked in memory for this demo.'
-        );
+        localStorage.setItem('porterTrackSettings', JSON.stringify(settingsData));
+        console.log('Settings saved to localStorage');
+      } catch (localErr) {
+        console.warn('Could not save to localStorage:', localErr);
+        console.info('Changes are in memory only and will be lost on refresh');
       }
       
       return true;
     } catch (err) {
-      console.error('Error saving settings to file:', err);
+      console.error('Error saving settings:', err);
       error.value = err instanceof Error ? err.message : 'Failed to save settings';
       return false;
     }
@@ -167,27 +174,20 @@ export const useSettingsStore = defineStore('settings', () => {
         buildings: buildings.value
       };
       
-      console.log('Location data that would be saved to file:', locationData);
+      console.log('Location data saved in memory:', locationData);
       
-      // For demo purposes, saving to the actual file
+      // Store in localStorage
       try {
-        await fetch('/api/save-locations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(locationData)
-        });
-        console.log('Location data saved to file successfully');
-      } catch (saveErr) {
-        console.warn('Could not save location data to file via API:', saveErr);
-        console.info(
-          'Note: In a production app, this would save to /public/data/locations.json.\n' +
-          'Changes are being tracked in memory for this demo.'
-        );
+        localStorage.setItem('porterTrackLocations', JSON.stringify(locationData));
+        console.log('Location data saved to localStorage');
+      } catch (localErr) {
+        console.warn('Could not save location data to localStorage:', localErr);
+        console.info('Changes are in memory only and will be lost on refresh');
       }
       
       return true;
     } catch (err) {
-      console.error('Error saving location data to file:', err);
+      console.error('Error saving location data:', err);
       error.value = err instanceof Error ? err.message : 'Failed to save location data';
       return false;
     }
@@ -211,6 +211,10 @@ export const useSettingsStore = defineStore('settings', () => {
     
     if (newSettings.jobCategoryDefaults !== undefined) {
       jobCategoryDefaults.value = newSettings.jobCategoryDefaults
+    }
+    
+    if (newSettings.shifts !== undefined) {
+      shifts.value = newSettings.shifts
     }
     
     // Save settings to file
@@ -720,6 +724,7 @@ export const useSettingsStore = defineStore('settings', () => {
     jobCategories,
     buildings,
     jobCategoryDefaults,
+    shifts,
     isLoading,
     error,
     
