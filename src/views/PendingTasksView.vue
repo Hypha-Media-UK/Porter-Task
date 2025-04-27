@@ -1,7 +1,14 @@
 <template>
   <main class="pending-tasks-view">
     <header class="tasks-header">
-      <h1>Pending Tasks</h1>
+      <div class="header-left">
+        <button class="back-button" @click="goBack" aria-label="Go back">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <h1>Pending Tasks</h1>
+      </div>
       
       <div v-if="pendingTasks.length > 0" class="tasks-count">
         {{ pendingTasks.length }} {{ pendingTasks.length === 1 ? 'task' : 'tasks' }}
@@ -65,6 +72,10 @@ const shiftStore = useShiftStore()
 const { pendingTasks, isLoading, updateTaskStatus } = shiftStore
 
 // Methods
+const goBack = () => {
+  if (navigate) navigate('tasks');
+}
+
 const completeTask = (taskId: string) => {
   updateTaskStatus(taskId, 'Completed')
 }
@@ -95,6 +106,30 @@ const navigateToTaskForm = () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-md);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.back-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--color-text);
+  transition: background-color 0.2s ease;
+}
+
+.back-button:hover {
+  background-color: rgba(0, 0, 0, 0.05);
 }
 
 h1 {
