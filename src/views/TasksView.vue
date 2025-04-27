@@ -1,10 +1,10 @@
 <template>
-  <div class="tasks-view">
-    <div class="top-header">
+  <main class="tasks-view">
+    <header class="top-header">
       <h1>Task Management</h1>
-    </div>
+    </header>
     
-    <div v-if="currentShift" class="task-summary-card">
+    <section v-if="currentShift" class="task-summary-card">
       <div class="summary-header">
         <div class="shift-info">
           <div class="shift-badge" :class="currentShift.type.toLowerCase()">
@@ -33,11 +33,9 @@
           <div class="stat-label">Completed</div>
         </div>
       </div>
-    </div>
+    </section>
     
-    <!-- Task Category Cards removed as they're redundant with the task summary card -->
-    
-    <div v-if="pendingTasks.length > 0" class="recent-task-section">
+    <section v-if="pendingTasks.length > 0" class="recent-task-section">
       <div class="section-header">
         <h2>Recent Tasks</h2>
         <button class="view-all-link" @click="navigateToPendingTasks">View All</button>
@@ -53,14 +51,14 @@
           <TaskCard :task="task" :compact="true" />
         </div>
       </div>
-    </div>
+    </section>
     
-    <div v-else-if="isLoading && !currentShift" class="loading-state">
+    <section v-else-if="isLoading && !currentShift" class="loading-state">
       <div class="spinner"></div>
       <p>Loading tasks...</p>
-    </div>
+    </section>
     
-    <div v-else-if="currentShift && currentShift.tasks.length === 0" class="empty-state">
+    <section v-else-if="currentShift && currentShift.tasks.length === 0" class="empty-state">
       <div class="empty-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
@@ -71,7 +69,7 @@
       </div>
       <h3>No Tasks Yet</h3>
       <p>Create your first task to get started</p>
-    </div>
+    </section>
     
     <!-- Floating Action Button for creating a new task -->
     <button class="fab" @click="navigateToTaskForm" aria-label="Create new task">
@@ -105,7 +103,7 @@
     </div>
     
     <TabNavigation current-route="tasks" @navigate="navigate" />
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
@@ -166,11 +164,14 @@ const endCurrentShift = () => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-bottom: var(--spacing-lg); /* Reduced padding since we removed bottom navigation */
+  padding: var(--spacing-md);
+  padding-bottom: calc(70px + var(--safe-area-inset-bottom));
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .top-header {
-  padding: var(--spacing-md);
   margin-bottom: var(--spacing-xs);
 }
 
@@ -196,10 +197,9 @@ h3 {
 
 /* Task Summary Card */
 .task-summary-card {
-  margin: 0 var(--spacing-md) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
   background-color: var(--color-card);
   border-radius: var(--border-radius-lg);
-  box-shadow: var(--box-shadow);
   overflow: hidden;
 }
 
@@ -276,7 +276,6 @@ h3 {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   margin-bottom: var(--spacing-sm);
-  box-shadow: var(--box-shadow-sm);
 }
 
 .stat-icon.pending {
@@ -310,8 +309,7 @@ h3 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-md);
-  padding-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
 }
 
 .view-all-link {
@@ -324,121 +322,15 @@ h3 {
   padding: var(--spacing-xs) var(--spacing-sm);
 }
 
-/* Category Cards */
-.category-grid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-  padding: 0 var(--spacing-md);
-  margin-bottom: var(--spacing-md);
-}
-
-.category-card {
-  position: relative;
-  background-color: var(--color-card);
-  border-radius: var(--border-radius-lg);
-  padding: var(--spacing-md) var(--spacing-lg);
-  box-shadow: var(--box-shadow);
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  cursor: pointer;
-  overflow: hidden;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.category-card:active {
-  transform: scale(0.98);
-  box-shadow: var(--box-shadow-sm);
-}
-
-.category-card.pending {
-  border-top: 4px solid var(--color-pending);
-}
-
-.category-card.completed {
-  border-top: 4px solid var(--color-success);
-}
-
-.category-badge {
-  position: absolute;
-  top: var(--spacing-xs);
-  right: var(--spacing-xs);
-  min-width: 20px;
-  height: 20px;
-  border-radius: 10px;
-  background-color: var(--color-text-light);
-  color: white;
-  font-size: 12px;
-  font-weight: var(--font-weight-bold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 var(--spacing-xs);
-}
-
-.category-card.pending.active .category-badge {
-  background-color: var(--color-pending);
-}
-
-.category-card.completed.active .category-badge {
-  background-color: var(--color-success);
-}
-
-.category-icon {
-  width: 56px;
-  height: 56px;
-  min-width: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  margin-right: var(--spacing-md);
-  background-color: var(--color-secondary-light);
-  color: var(--color-text-secondary);
-}
-
-.category-card.pending.active .category-icon {
-  background-color: rgba(var(--color-pending-rgb), 0.1);
-  color: var(--color-pending);
-}
-
-.category-card.completed.active .category-icon {
-  background-color: rgba(var(--color-success-rgb), 0.1);
-  color: var(--color-success);
-}
-
-.category-content {
-  flex: 1;
-  text-align: left;
-}
-
-.category-title {
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-xs);
-}
-
-.category-description {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.category-arrow {
-  margin-left: var(--spacing-md);
-  color: var(--color-text-light);
-}
-
 /* Recent Tasks */
 .recent-task-section {
   margin-bottom: var(--spacing-lg);
 }
 
 .task-list {
-  padding: 0 var(--spacing-md);
-}
-
-.task-item {
-  margin-bottom: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
 /* Empty & Loading states */
@@ -448,7 +340,7 @@ h3 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-2xl) var(--spacing-md);
+  padding: var(--spacing-2xl) 0;
   text-align: center;
   color: var(--color-text-light);
 }
@@ -486,16 +378,14 @@ h3 {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--box-shadow-lg);
   border: none;
   cursor: pointer;
   z-index: 10;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: transform var(--transition-fast);
 }
 
 .fab:active {
-  transform: scale(0.95) translateY(2px);
-  box-shadow: var(--box-shadow);
+  transform: scale(0.95);
 }
 
 /* Modal styles - iOS style */
@@ -586,8 +476,9 @@ h3 {
 
 /* Tablet and larger screens */
 @media (min-width: 768px) {
-  .category-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  .tasks-view {
+    max-width: 800px;
+    margin: 0 auto;
   }
 }
 </style>

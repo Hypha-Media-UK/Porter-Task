@@ -1,12 +1,11 @@
 <template>
-  <div class="settings-view">
-    <div class="content">
-      <div class="top-header">
-        <h1>Settings</h1>
-      </div>
+  <main class="settings-view">
+    <header class="top-header">
+      <h1>Settings</h1>
+    </header>
       
-      <!-- Settings Tabs Navigation -->
-      <div class="settings-tabs">
+    <!-- Settings Tabs Navigation -->
+    <nav class="settings-tabs">
         <button 
           v-for="tab in tabs" 
           :key="tab.id"
@@ -17,10 +16,10 @@
           <span class="tab-icon" v-html="tab.icon"></span>
           {{ tab.name }}
         </button>
-      </div>
-      
-      <!-- Tab content -->
-      <div class="tab-content">
+    </nav>
+    
+    <!-- Tab content -->
+    <section class="tab-content">
         <!-- App Settings Tab -->
         <div v-if="activeTab === 'app'" class="tab-pane">
           <ApplicationSettings />
@@ -41,12 +40,11 @@
         <div v-if="activeTab === 'tasks'" class="tab-pane">
           <JobCategories />
         </div>
-      </div>
-    </div>
+    </section>
     
     <!-- Tab navigation -->
     <TabNavigation current-route="settings" @navigate="navigate" />
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
@@ -112,13 +110,11 @@ const activeTab = ref('app')
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-bottom: calc(70px + var(--safe-area-inset-bottom)); /* Space for tab navigation */
-}
-
-.content {
-  flex: 1;
   padding: var(--spacing-md);
-  overflow-y: auto;
+  padding-bottom: calc(70px + var(--safe-area-inset-bottom)); /* Space for tab navigation */
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .top-header {
@@ -138,7 +134,6 @@ h1 {
   background-color: var(--color-card);
   border-radius: var(--border-radius-lg);
   margin-bottom: var(--spacing-md);
-  box-shadow: var(--box-shadow);
   scrollbar-width: none; /* For Firefox */
   -ms-overflow-style: none; /* For Internet Explorer and Edge */
 }

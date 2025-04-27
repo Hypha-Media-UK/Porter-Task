@@ -1,216 +1,213 @@
 <template>
-  <div class="home-view">
-    <div class="content">
-      <!-- ACTIVE SHIFT VIEW -->
-      <div v-if="isShiftActive && currentShift" class="active-shift">
-        <div class="top-header">
-          <h1>Current Shift</h1>
-        </div>
-        
-        <div class="shift-card">
-          <div class="shift-header">
-            <div class="shift-title">
-              <h2>{{ shiftTitle }}</h2>
-              <div class="shift-badge" :class="currentShift.type.toLowerCase()">
-                {{ currentShift.type }}
-              </div>
-            </div>
-            
-            <div class="shift-supervisor">
-              <div class="supervisor-avatar">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-              </div>
-              <div class="supervisor-info">
-                <div class="supervisor-label">Supervisor</div>
-                <div class="supervisor-name">{{ currentShift.supervisor }}</div>
-              </div>
-            </div>
-            
-            <div class="shift-time">
-              <div class="time-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-              </div>
-              <div class="time-details">
-                <div class="time-label">Started</div>
-                <div class="time-value">{{ formatTime(new Date(currentShift.startTime)) }}</div>
-              </div>
+  <main class="home-view">
+    <!-- ACTIVE SHIFT VIEW -->
+    <section v-if="isShiftActive && currentShift" class="active-shift">
+      <header class="top-header">
+        <h1>Current Shift</h1>
+      </header>
+      
+      <div class="shift-card">
+        <div class="shift-header">
+          <div class="shift-title">
+            <h2>{{ shiftTitle }}</h2>
+            <div class="shift-badge" :class="currentShift.type.toLowerCase()">
+              {{ currentShift.type }}
             </div>
           </div>
           
-          <div class="shift-progress">
-            <div class="progress-label">
-              <span>Task Completion</span>
-              <span>{{ Math.round((completedTasksCount / (currentShift.tasks.length || 1)) * 100) }}%</span>
+          <div class="shift-supervisor">
+            <div class="supervisor-avatar">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
             </div>
-            <div class="progress">
-              <div class="progress-bar" :style="{ width: `${(completedTasksCount / (currentShift.tasks.length || 1)) * 100}%` }"></div>
-            </div>
-          </div>
-          
-          <div class="shift-stats">
-            <div class="stat-item total">
-              <div class="stat-value">{{ currentShift.tasks.length }}</div>
-              <div class="stat-label">Total Tasks</div>
-            </div>
-            
-            <div class="stat-item pending">
-              <div class="stat-value">{{ pendingTasksCount }}</div>
-              <div class="stat-label">Pending</div>
-            </div>
-            
-            <div class="stat-item completed">
-              <div class="stat-value">{{ completedTasksCount }}</div>
-              <div class="stat-label">Completed</div>
+            <div class="supervisor-info">
+              <div class="supervisor-label">Supervisor</div>
+              <div class="supervisor-name">{{ currentShift.supervisor }}</div>
             </div>
           </div>
           
-          <div class="shift-actions">
-            <button class="btn-primary btn-large" @click="navigate('tasks')">
-              View Tasks
-            </button>
-            <button class="btn-danger btn-large" @click="showEndShiftConfirm = true">
-              End Shift
-            </button>
-          </div>
-        </div>
-        
-        <!-- Quick Actions Section -->
-        <div v-if="pendingTasksCount > 0" class="quick-actions-section">
-          <h3>Pending Tasks</h3>
-          <div class="quick-action-card" @click="navigate('pendingTasks')">
-            <div class="action-icon pending">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <div class="shift-time">
+            <div class="time-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
             </div>
-            <div class="action-content">
-              <div class="action-title">View Pending Tasks</div>
-              <div class="action-subtitle">{{ pendingTasksCount }} tasks waiting to be completed</div>
+            <div class="time-details">
+              <div class="time-label">Started</div>
+              <div class="time-value">{{ formatTime(new Date(currentShift.startTime)) }}</div>
             </div>
-            <div class="action-chevron">
+          </div>
+        </div>
+        
+        <div class="shift-progress">
+          <div class="progress-label">
+            <span>Task Completion</span>
+            <span>{{ Math.round((completedTasksCount / (currentShift.tasks.length || 1)) * 100) }}%</span>
+          </div>
+          <div class="progress">
+            <div class="progress-bar" :style="{ width: `${(completedTasksCount / (currentShift.tasks.length || 1)) * 100}%` }"></div>
+          </div>
+        </div>
+        
+        <div class="shift-stats">
+          <div class="stat-item total">
+            <div class="stat-value">{{ currentShift.tasks.length }}</div>
+            <div class="stat-label">Total Tasks</div>
+          </div>
+          
+          <div class="stat-item pending">
+            <div class="stat-value">{{ pendingTasksCount }}</div>
+            <div class="stat-label">Pending</div>
+          </div>
+          
+          <div class="stat-item completed">
+            <div class="stat-value">{{ completedTasksCount }}</div>
+            <div class="stat-label">Completed</div>
+          </div>
+        </div>
+        
+        <div class="shift-actions">
+          <button class="btn-primary btn-large" @click="navigate('tasks')">
+            View Tasks
+          </button>
+          <button class="btn-danger btn-large" @click="showEndShiftConfirm = true">
+            End Shift
+          </button>
+        </div>
+      </div>
+      
+      <!-- Quick Actions Section -->
+      <div v-if="pendingTasksCount > 0" class="quick-actions-section">
+        <h3>Pending Tasks</h3>
+        <div class="quick-action-card" @click="navigate('pendingTasks')">
+          <div class="action-icon pending">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div class="action-content">
+            <div class="action-title">View Pending Tasks</div>
+            <div class="action-subtitle">{{ pendingTasksCount }} tasks waiting to be completed</div>
+          </div>
+          <div class="action-chevron">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- NEW SHIFT VIEW -->
+    <section v-else class="new-shift">
+      <div class="welcome-card">
+        <div class="welcome-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            <path d="M9 14l2 2 4-4"></path>
+          </svg>
+        </div>
+        <h2>Start a New Shift</h2>
+        <p>Create a new porter shift to start tracking and managing tasks.</p>
+      </div>
+      
+      <div class="shift-form card">
+        <div class="form-group">
+          <label for="supervisor">Supervisor</label>
+          <select 
+            id="supervisor" 
+            v-model="supervisor" 
+            required
+            class="form-control"
+          >
+            <option value="" disabled>Select Supervisor</option>
+            <option v-for="sup in supervisors" :key="sup" :value="sup">{{ sup }}</option>
+          </select>
+        </div>
+        
+        <div class="shift-actions">
+          <button 
+            type="button" 
+            class="btn-primary btn-large"
+            @click="startSpecificShift('Day')"
+            :disabled="!supervisor"
+          >
+            <span class="btn-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+            </span>
+            Start Day Shift
+          </button>
+          <button 
+            type="button" 
+            class="btn-secondary btn-large"
+            @click="startSpecificShift('Night')"
+            :disabled="!supervisor"
+          >
+            <span class="btn-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </span>
+            Start Night Shift
+          </button>
+        </div>
+      </div>
+      
+      <div class="recent-shifts" v-if="recentShifts.length > 0">
+        <div class="section-header">
+          <h3>Recent Shifts</h3>
+          <button class="view-all-link" @click="navigateToArchive">View All</button>
+        </div>
+        
+        <div class="shift-list">
+          <div 
+            v-for="shift in recentShifts" 
+            :key="shift.id" 
+            class="shift-list-item"
+            @click="viewShiftDetails(shift.id)"
+          >
+            <div class="shift-list-icon" :class="shift.type.toLowerCase()">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+            </div>
+            
+            <div class="shift-list-content">
+              <div class="shift-list-title">
+                {{ shift.type }} Shift - {{ formatDate(new Date(shift.date)) }}
+              </div>
+              <div class="shift-list-details">
+                <span class="shift-list-supervisor">{{ shift.supervisor }}</span>
+                <span class="separator">•</span>
+                <span class="shift-list-tasks">{{ shift.tasks.length }} tasks</span>
+              </div>
+            </div>
+            
+            <div class="shift-list-chevron">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
             </div>
           </div>
         </div>
       </div>
-      
-      <!-- NEW SHIFT VIEW -->
-      <div v-else class="new-shift">
-        
-        <div class="welcome-card">
-          <div class="welcome-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-              <path d="M9 14l2 2 4-4"></path>
-            </svg>
-          </div>
-          <h2>Start a New Shift</h2>
-          <p>Create a new porter shift to start tracking and managing tasks.</p>
-        </div>
-        
-        <div class="shift-form card">
-          <div class="form-group">
-            <label for="supervisor">Supervisor</label>
-            <select 
-              id="supervisor" 
-              v-model="supervisor" 
-              required
-              class="form-control"
-            >
-              <option value="" disabled>Select Supervisor</option>
-              <option v-for="sup in supervisors" :key="sup" :value="sup">{{ sup }}</option>
-            </select>
-          </div>
-          
-          <div class="shift-actions">
-            <button 
-              type="button" 
-              class="btn-primary btn-large"
-              @click="startSpecificShift('Day')"
-              :disabled="!supervisor"
-            >
-              <span class="btn-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="12" cy="12" r="5"></circle>
-                  <line x1="12" y1="1" x2="12" y2="3"></line>
-                  <line x1="12" y1="21" x2="12" y2="23"></line>
-                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                  <line x1="1" y1="12" x2="3" y2="12"></line>
-                  <line x1="21" y1="12" x2="23" y2="12"></line>
-                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                </svg>
-              </span>
-              Start Day Shift
-            </button>
-            <button 
-              type="button" 
-              class="btn-secondary btn-large"
-              @click="startSpecificShift('Night')"
-              :disabled="!supervisor"
-            >
-              <span class="btn-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                </svg>
-              </span>
-              Start Night Shift
-            </button>
-          </div>
-        </div>
-        
-        <div class="recent-shifts" v-if="recentShifts.length > 0">
-          <div class="section-header">
-            <h3>Recent Shifts</h3>
-            <button class="view-all-link" @click="navigateToArchive">View All</button>
-          </div>
-          
-          <div class="shift-list">
-            <div 
-              v-for="shift in recentShifts" 
-              :key="shift.id" 
-              class="shift-list-item"
-              @click="viewShiftDetails(shift.id)"
-            >
-              <div class="shift-list-icon" :class="shift.type.toLowerCase()">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                </svg>
-              </div>
-              
-              <div class="shift-list-content">
-                <div class="shift-list-title">
-                  {{ shift.type }} Shift - {{ formatDate(new Date(shift.date)) }}
-                </div>
-                <div class="shift-list-details">
-                  <span class="shift-list-supervisor">{{ shift.supervisor }}</span>
-                  <span class="separator">•</span>
-                  <span class="shift-list-tasks">{{ shift.tasks.length }} tasks</span>
-                </div>
-              </div>
-              
-              <div class="shift-list-chevron">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    </section>
     
     <!-- End Shift Confirmation Modal -->
     <div v-if="showEndShiftConfirm" class="modal-backdrop" @click.self="showEndShiftConfirm = false">
@@ -236,7 +233,7 @@
     </div>
     
     <TabNavigation current-route="home" @navigate="navigate" />
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
@@ -333,19 +330,18 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-bottom: var(--spacing-lg); /* Reduced padding since we removed bottom navigation */
-}
-
-.content {
-  flex: 1;
   padding: var(--spacing-md);
+  padding-bottom: var(--spacing-lg);
   max-width: 800px;
   margin: 0 auto;
   width: 100%;
 }
 
+.active-shift, .new-shift {
+  flex: 1;
+}
+
 .top-header {
-  padding: var(--spacing-md) 0;
   margin-bottom: var(--spacing-md);
 }
 
@@ -380,7 +376,6 @@ p {
 .card {
   background-color: var(--color-card);
   border-radius: var(--border-radius-lg);
-  box-shadow: var(--box-shadow);
   padding: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
 }
@@ -389,7 +384,6 @@ p {
 .shift-card {
   background-color: var(--color-card);
   border-radius: var(--border-radius-lg);
-  box-shadow: var(--box-shadow);
   padding: var(--spacing-lg);
   margin-bottom: var(--spacing-lg);
 }
@@ -581,15 +575,13 @@ p {
   background-color: var(--color-card);
   border-radius: var(--border-radius);
   padding: var(--spacing-md);
-  box-shadow: var(--box-shadow);
   margin-bottom: var(--spacing-md);
   cursor: pointer;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: transform var(--transition-fast);
 }
 
 .quick-action-card:active {
   transform: scale(0.98);
-  box-shadow: var(--box-shadow-sm);
 }
 
 .action-icon {
@@ -629,7 +621,6 @@ p {
 .welcome-card {
   background-color: var(--color-card);
   border-radius: var(--border-radius-lg);
-  box-shadow: var(--box-shadow);
   padding: var(--spacing-xl);
   margin-bottom: var(--spacing-lg);
   text-align: center;
@@ -647,44 +638,6 @@ p {
   padding: var(--spacing-lg);
 }
 
-.segmented-control {
-  display: flex;
-  background-color: var(--color-secondary-light);
-  border-radius: var(--border-radius-pill);
-  padding: 2px;
-  margin-bottom: var(--spacing-md);
-  position: relative;
-  overflow: hidden;
-}
-
-.segment {
-  flex: 1;
-  text-align: center;
-  padding: var(--spacing-sm) var(--spacing-md);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  position: relative;
-  z-index: 1;
-  transition: color var(--transition-fast);
-  cursor: pointer;
-  border-radius: var(--border-radius-pill);
-}
-
-.segment.active {
-  color: white;
-}
-
-.segment-highlighter {
-  position: absolute;
-  height: calc(100% - 4px);
-  top: 2px;
-  left: 2px;
-  background-color: var(--color-primary);
-  border-radius: var(--border-radius-pill);
-  transition: transform var(--transition-fast), width var(--transition-fast);
-  z-index: 0;
-}
-
 .form-group {
   margin-bottom: var(--spacing-lg);
 }
@@ -695,13 +648,6 @@ p {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
-}
-
-.start-btn {
-  width: 100%;
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-md);
-  font-size: var(--font-size-lg);
 }
 
 /* Recent Shifts styles */
@@ -729,7 +675,6 @@ p {
 .shift-list {
   background-color: var(--color-card);
   border-radius: var(--border-radius-lg);
-  box-shadow: var(--box-shadow);
   overflow: hidden;
 }
 

@@ -1,15 +1,13 @@
 <template>
-  <div class="app">
-    <Header />
-    
-    <main class="main-content">
-      <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
-    </main>
-  </div>
+  <Header />
+  
+  <main class="main-content">
+    <router-view v-slot="{ Component }">
+      <transition name="fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
+  </main>
 </template>
 
 <script setup lang="ts">
@@ -51,16 +49,11 @@ watch(() => isShiftActive, (newValue, oldValue) => {
 </script>
 
 <style>
-.app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-}
-
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: calc(100vh - var(--header-height, 60px));
 }
 
 /* Page transitions */

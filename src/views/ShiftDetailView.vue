@@ -1,136 +1,150 @@
 <template>
-  <div class="shift-detail-view">
-    <div class="content">
-      <div v-if="isLoading" class="loading-state">
-        <div class="spinner"></div>
-        <p>Loading shift details...</p>
+  <main class="shift-detail-view">
+    <section v-if="isLoading" class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading shift details...</p>
+    </section>
+    
+    <section v-else-if="!shift" class="empty-state">
+      <div class="empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
       </div>
-      
-      <div v-else-if="!shift" class="empty-state">
-        <div class="empty-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
+      <h3>Shift Not Found</h3>
+      <p>The shift you're looking for doesn't exist or has been deleted.</p>
+      <button class="btn-primary" @click="navigateToArchive">
+        Back to Archive
+      </button>
+    </section>
+    
+    <section v-else class="shift-details">
+      <article class="shift-card">
+        <header class="shift-header">
+          <div class="shift-date">
+            {{ formatDate(new Date(shift.date)) }}
+          </div>
+          <div class="shift-type" :class="shift.type.toLowerCase()">
+            {{ shift.type }} Shift
+          </div>
+        </header>
+        
+        <div class="shift-actions">
+          <button class="btn-primary btn-reopen-shift" @click="confirmReopenShift">
+            Reopen Shift
+          </button>
+          <button class="btn-danger btn-delete-shift" @click="confirmDeleteShift">
+            Delete Shift
+          </button>
         </div>
-        <h3>Shift Not Found</h3>
-        <p>The shift you're looking for doesn't exist or has been deleted.</p>
-        <button class="btn-primary" @click="navigateToArchive">
-          Back to Archive
-        </button>
-      </div>
-      
-      <div v-else class="shift-details">
-        <div class="shift-card">
-          <div class="shift-header">
-            <div class="shift-date">
-              {{ formatDate(new Date(shift.date)) }}
-            </div>
-            <div class="shift-type" :class="shift.type.toLowerCase()">
-              {{ shift.type }} Shift
-            </div>
-          </div>
-          
-          <div class="shift-actions">
-            <button class="btn-primary btn-reopen-shift" @click="confirmReopenShift">
-              Reopen Shift
-            </button>
-            <button class="btn-danger btn-delete-shift" @click="confirmDeleteShift">
-              Delete Shift
-            </button>
-          </div>
-          
-          <div class="shift-info">
-            <div class="info-row">
-              <div class="info-item">
-                <span class="label">Supervisor</span>
-                <span class="value">{{ shift.supervisor }}</span>
-              </div>
-              
-              <div class="info-item">
-                <span class="label">Start Time</span>
-                <span class="value">{{ formatTime(new Date(shift.startTime)) }}</span>
-              </div>
-              
-              <div class="info-item">
-                <span class="label">End Time</span>
-                <span class="value">{{ shift.endTime ? formatTime(new Date(shift.endTime)) : 'Ongoing' }}</span>
-              </div>
-              
-              <div class="info-item">
-                <span class="label">Duration</span>
-                <span class="value">{{ formatDuration(shift.startTime, shift.endTime || '') }}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="stats-row">
-            <div class="stat-item">
-              <div class="stat-value">{{ shift.tasks.length }}</div>
-              <div class="stat-label">Total Tasks</div>
+        
+        <div class="shift-info">
+          <div class="info-row">
+            <div class="info-item">
+              <span class="label">Supervisor</span>
+              <span class="value">{{ shift.supervisor }}</span>
             </div>
             
-            <div class="stat-item">
-              <div class="stat-value">{{ completedTasksCount }}</div>
-              <div class="stat-label">Completed</div>
+            <div class="info-item">
+              <span class="label">Start Time</span>
+              <span class="value">{{ formatTime(new Date(shift.startTime)) }}</span>
             </div>
             
-            <div class="stat-item">
-              <div class="stat-value">{{ pendingTasksCount }}</div>
-              <div class="stat-label">Pending</div>
+            <div class="info-item">
+              <span class="label">End Time</span>
+              <span class="value">{{ shift.endTime ? formatTime(new Date(shift.endTime)) : 'Ongoing' }}</span>
+            </div>
+            
+            <div class="info-item">
+              <span class="label">Duration</span>
+              <span class="value">{{ formatDuration(shift.startTime, shift.endTime || '') }}</span>
             </div>
           </div>
         </div>
         
-        <div class="tasks-section">
-          <div class="tasks-header">
-            <h2>Tasks</h2>
-            
-            <div class="tabs">
-              <button 
-                class="tab-btn" 
-                :class="{ active: activeTab === 'all' }"
-                @click="activeTab = 'all'"
-              >
-                All ({{ shift.tasks.length }})
-              </button>
-              <button 
-                class="tab-btn" 
-                :class="{ active: activeTab === 'completed' }"
-                @click="activeTab = 'completed'"
-              >
-                Completed ({{ completedTasksCount }})
-              </button>
-              <button 
-                class="tab-btn" 
-                :class="{ active: activeTab === 'pending' }"
-                @click="activeTab = 'pending'"
-              >
-                Pending ({{ pendingTasksCount }})
-              </button>
-            </div>
+        <div class="stats-row">
+          <div class="stat-item">
+            <div class="stat-value">{{ shift.tasks.length }}</div>
+            <div class="stat-label">Total Tasks</div>
           </div>
           
-          <div v-if="filteredTasks.length === 0" class="empty-tasks">
-            <p>No {{ activeTab === 'all' ? '' : activeTab }} tasks for this shift.</p>
+          <div class="stat-item">
+            <div class="stat-value">{{ completedTasksCount }}</div>
+            <div class="stat-label">Completed</div>
           </div>
           
-          <div v-else class="tasks-list">
-            <div 
-              v-for="task in filteredTasks" 
-              :key="task.id" 
-              class="task-item"
-            >
-              <TaskCard :task="task" />
-            </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ pendingTasksCount }}</div>
+            <div class="stat-label">Pending</div>
           </div>
         </div>
-      </div>
-    </div>
+      </article>
+      
+      <section class="tasks-section">
+        <header class="tasks-header">
+          <h2>Tasks</h2>
+          
+          <nav class="tabs">
+            <button 
+              class="tab-btn" 
+              :class="{ active: activeTab === 'all' }"
+              @click="activeTab = 'all'"
+            >
+              All ({{ shift.tasks.length }})
+            </button>
+            <button 
+              class="tab-btn" 
+              :class="{ active: activeTab === 'completed' }"
+              @click="activeTab = 'completed'"
+            >
+              Completed ({{ completedTasksCount }})
+            </button>
+            <button 
+              class="tab-btn" 
+              :class="{ active: activeTab === 'pending' }"
+              @click="activeTab = 'pending'"
+            >
+              Pending ({{ pendingTasksCount }})
+            </button>
+          </nav>
+        </header>
+        
+        <div v-if="filteredTasks.length === 0" class="empty-tasks">
+          <p>No {{ activeTab === 'all' ? '' : activeTab }} tasks for this shift.</p>
+        </div>
+        
+        <ul v-else class="tasks-list">
+          <li 
+            v-for="task in filteredTasks" 
+            :key="task.id" 
+            class="task-item"
+          >
+            <article class="shift-detail-task">
+              <div class="task-status" :class="task.status.toLowerCase()"></div>
+              <div class="task-info">
+                <div class="task-header">
+                  <div class="task-type">{{ task.jobCategory }} - {{ task.itemType }}</div>
+                  <div class="task-time">{{ formatTime(new Date(task.receivedTime)) }}</div>
+                </div>
+                <div class="task-journey">
+                  <span class="from-location">{{ task.fromLocation.displayName }}</span>
+                  <span class="journey-arrow">→</span>
+                  <span class="to-location">{{ task.toLocation.displayName }}</span>
+                </div>
+                <div v-if="task.status === 'Completed' && task.completedTime" class="task-completion">
+                  Completed: {{ formatTime(new Date(task.completedTime)) }}
+                </div>
+              </div>
+            </article>
+          </li>
+        </ul>
+      </section>
+    </section>
     
     <TabNavigation current-route="archive" @navigate="navigate" />
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
@@ -254,19 +268,17 @@ watch(() => props.shiftId, loadShift)
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  padding-bottom: 70px; /* Space for tab navigation */
-}
-
-.content {
-  flex: 1;
   padding: var(--spacing-md);
-  overflow-y: auto;
+  padding-bottom: calc(70px + var(--safe-area-inset-bottom));
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .shift-card {
   background-color: white;
   border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
+  border: 1px solid var(--color-border-light);
   margin-bottom: var(--spacing-lg);
   overflow: hidden;
 }
@@ -431,13 +443,94 @@ watch(() => props.shiftId, loadShift)
   color: var(--color-text-light);
   background-color: white;
   border-radius: var(--border-radius);
-  box-shadow: var(--box-shadow);
+  border: 1px solid var(--color-border-light);
 }
 
 .tasks-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.task-item {
+  transition: transform var(--transition-fast);
+}
+
+.task-item:hover {
+  transform: translateY(-2px);
+}
+
+/* Custom task card styling for shift detail view */
+.shift-detail-task {
+  display: flex;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background-color: white;
+}
+
+.task-status {
+  width: 4px;
+  background-color: var(--color-border);
+}
+
+.task-status.pending {
+  background-color: var(--color-pending);
+}
+
+.task-status.completed {
+  background-color: var(--color-success);
+}
+
+.task-info {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-xs);
+}
+
+.task-type {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.task-time {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.task-journey {
+  display: flex;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-xs);
+  align-items: center;
+}
+
+.from-location {
+  color: var(--color-primary);
+}
+
+.to-location {
+  color: var(--color-success);
+}
+
+.journey-arrow {
+  color: var(--color-text-light);
+  font-size: 14px;
+}
+
+.task-completion {
+  font-size: var(--font-size-xs);
+  color: var(--color-success);
+  font-style: italic;
 }
 
 /* Empty and loading states */
@@ -447,7 +540,7 @@ watch(() => props.shiftId, loadShift)
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: var(--spacing-2xl) var(--spacing-md);
+  padding: var(--spacing-2xl) 0;
   flex: 1;
   color: var(--color-text-light);
 }
@@ -481,13 +574,6 @@ watch(() => props.shiftId, loadShift)
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@media (min-width: 768px) {
-  .shift-detail-view {
-    max-width: 800px;
-    margin: 0 auto;
   }
 }
 </style>

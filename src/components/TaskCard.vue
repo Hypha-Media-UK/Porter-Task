@@ -1,5 +1,5 @@
 <template>
-  <div 
+  <article 
     class="task-card" 
     :class="{ 
       'compact': compact, 
@@ -90,7 +90,7 @@
         Complete
       </button>
     </div>
-  </div>
+  </article>
 </template>
 
 <script setup lang="ts">
@@ -121,17 +121,14 @@ const markAsComplete = () => {
   position: relative;
   background-color: var(--color-card);
   border-radius: var(--border-radius-lg);
-  box-shadow: var(--box-shadow);
   overflow: hidden;
-  margin-bottom: var(--spacing-md);
   display: flex;
   flex-direction: column;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: transform var(--transition-fast);
 }
 
 .task-card:not(.compact):active {
   transform: scale(0.98);
-  box-shadow: var(--box-shadow);
 }
 
 .task-status-indicator {
