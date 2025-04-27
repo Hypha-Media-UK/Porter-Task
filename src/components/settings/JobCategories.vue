@@ -68,17 +68,6 @@
               <button 
                 v-if="editingCategory !== category"
                 class="btn-icon" 
-                @click="addItemType(category)"
-                aria-label="Add item type"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-              </button>
-              <button 
-                v-if="editingCategory !== category"
-                class="btn-icon" 
                 @click="removeCategory(category)"
                 aria-label="Remove category"
               >
@@ -153,6 +142,24 @@
               </div>
             </li>
           </ul>
+          
+          <!-- Updated direct input for adding items to match other components -->
+          <div class="add-item-container">
+            <input 
+              type="text" 
+              v-model="newItemTypes[category]" 
+              placeholder="Enter new item type" 
+              @keyup.enter="confirmAddItemType(category)"
+              class="add-input"
+            />
+            <button 
+              class="btn-primary" 
+              @click="confirmAddItemType(category)"
+              :disabled="!newItemTypes[category] || !newItemTypes[category].trim()"
+            >
+              Add
+            </button>
+          </div>
         </div>
         
         <div class="add-category">
@@ -173,38 +180,6 @@
       </div>
     </div>
     
-    <!-- Add Item Type Modal -->
-    <div v-if="showAddItemModal" class="modal-backdrop" @click.self="showAddItemModal = false">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Add Item Type to {{ selectedCategory }}</h3>
-        </div>
-        
-        <div class="modal-body">
-          <input 
-            type="text" 
-            v-model="newItemType" 
-            placeholder="Enter item type name"
-            class="modal-input"
-            ref="itemTypeInput"
-          >
-        </div>
-        
-        <div class="modal-actions">
-          <button class="btn-secondary" @click="showAddItemModal = false">
-            Cancel
-          </button>
-          <button 
-            class="btn-primary" 
-            @click="confirmAddItemType"
-            :disabled="!newItemType.trim()"
-          >
-            Add
-          </button>
-        </div>
-      </div>
-    </div>
-    
     <!-- Default Locations Modal -->
     <div v-if="showDefaultsModal" class="modal-backdrop" @click.self="showDefaultsModal = false">
       <div class="modal-content default-locations-modal">
@@ -219,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, reactive } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
 import type { JobCategoriesMap } from '../../types'
 import CategoryDefaultLocations from './CategoryDefaultLocations.vue'
@@ -232,7 +207,6 @@ const { jobCategories, updateSettings } = settingsStore
 const typedJobCategories = computed(() => jobCategories as JobCategoriesMap)
 
 // Modal state
-const showAddItemModal = ref(false)
 const showDefaultsModal = ref(false)
 const selectedCategory = ref('')
 const newItemType = ref('')
@@ -250,11 +224,23 @@ const editingItemCategory = ref<string | null>(null)
 const editedItemTypeName = ref('')
 const itemTypeEditInput = ref<HTMLInputElement | null>(null)
 
+// Store new item type names for each category
+const newItemTypes = reactive<Record<string, string>>({})
+
+// Initialize newItemTypes for existing categories
+for (const category in jobCategories) {
+  if (!newItemTypes[category]) {
+    newItemTypes[category] = '';
+  }
+}
+
 // Category management
 const addCategory = () => {
   const name = newCategory.value.trim()
   if (name && !(name in jobCategories)) {
     if (settingsStore.addCategory(name)) {
+      // Initialize new item type field for this category
+      newItemTypes[name] = '';
       newCategory.value = ''
     }
   }
@@ -273,6 +259,11 @@ const startEditCategory = (category: string) => {
 const confirmEditCategory = (oldName: string) => {
   const newName = editedCategoryName.value.trim()
   if (newName && settingsStore.updateCategory(oldName, newName)) {
+    // Update newItemTypes key
+    if (newItemTypes[oldName] !== undefined) {
+      newItemTypes[newName] = newItemTypes[oldName];
+      delete newItemTypes[oldName];
+    }
     editingCategory.value = null
   }
 }
@@ -285,34 +276,21 @@ const cancelEditCategory = () => {
 const removeCategory = (category: string) => {
   if (confirm(`Are you sure you want to remove category "${category}" and all its items?`)) {
     settingsStore.deleteCategory(category)
+    // Remove the category from newItemTypes
+    delete newItemTypes[category]
   }
 }
 
-// Item type management
-const addItemType = (category: string) => {
-  selectedCategory.value = category
-  newItemType.value = ''
-  showAddItemModal.value = true
-  
-  // Focus the input after the modal is shown
-  nextTick(() => {
-    itemTypeInput.value?.focus()
-  })
-}
-
-const confirmAddItemType = () => {
-  const name = newItemType.value.trim()
-  const category = selectedCategory.value
-  
+// Item type management - updated to use direct input
+const confirmAddItemType = (category: string) => {
+  const name = newItemTypes[category]?.trim()
   if (name && category && typeof jobCategories === 'object') {
     const categoryItems = (jobCategories as Record<string, string[]>)[category]
     if (Array.isArray(categoryItems) && !categoryItems.includes(name)) {
-      categoryItems.push(name)
-      updateSettings({ jobCategories })
+      settingsStore.addItemType(category, name);
+      // Clear the input after adding
+      newItemTypes[category] = '';
     }
-    
-    showAddItemModal.value = false
-    newItemType.value = ''
   }
 }
 
@@ -461,7 +439,7 @@ const onDefaultLocationsSaved = () => {
   margin-top: var(--spacing-md);
 }
 
-.add-category input, .edit-input {
+.add-category input, .edit-input, .add-input {
   flex: 1;
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--color-border);
@@ -471,6 +449,14 @@ const onDefaultLocationsSaved = () => {
 
 .edit-input {
   width: 100%;
+}
+
+/* Updated styling to match other components */
+.add-item-container {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  padding: 0 var(--spacing-md) var(--spacing-md);
 }
 
 .btn-primary {
@@ -530,35 +516,5 @@ const onDefaultLocationsSaved = () => {
   padding: var(--spacing-lg);
   width: 90%;
   max-width: 400px;
-}
-
-.modal-header {
-  text-align: center;
-  margin-bottom: var(--spacing-md);
-}
-
-.modal-header h3 {
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-  margin: 0;
-  font-size: var(--font-size-lg);
-}
-
-.modal-body {
-  margin-bottom: var(--spacing-lg);
-}
-
-.modal-input {
-  width: 100%;
-  padding: var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--border-radius);
-  font-size: var(--font-size-base);
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-md);
 }
 </style>

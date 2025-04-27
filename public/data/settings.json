@@ -3,7 +3,8 @@
     "Chris Crombie",
     "Luke Clements",
     "Martin Smith",
-    "Martin Fearon"
+    "Martin Fearon",
+    "Sumi"
   ],
   "porters": [
     "Porter 1",
@@ -21,7 +22,8 @@
     "Patient Transfer": [
       "Wheelchair",
       "Stretcher",
-      "Bed"
+      "Bed",
+      "Walk"
     ],
     "Specimen Delivery": [
       "Blood Sample",

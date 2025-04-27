@@ -56,17 +56,6 @@
               <button 
                 v-if="editingBuilding !== building.id"
                 class="btn-icon" 
-                @click="addDepartment(building.id)"
-                aria-label="Add department"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-              </button>
-              <button 
-                v-if="editingBuilding !== building.id"
-                class="btn-icon" 
                 @click="removeBuilding(building.id)"
                 aria-label="Remove building"
               >
@@ -148,17 +137,20 @@
               </li>
             </ul>
             
+            <!-- Direct input for adding departments (consistent with other settings components) -->
             <div class="add-location">
-              <button 
-                class="btn-secondary" 
-                @click="addDepartment(building.id)"
-                aria-label="Add department"
+              <input 
+                type="text" 
+                v-model="newDepartments[building.id]" 
+                placeholder="Enter department name"
+                @keyup.enter="confirmAddDepartment(building.id)"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Add Department
+              <button 
+                class="btn-primary" 
+                @click="confirmAddDepartment(building.id)"
+                :disabled="!newDepartments[building.id] || !newDepartments[building.id].trim()"
+              >
+                Add
               </button>
             </div>
           </div>
@@ -185,7 +177,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed, onMounted } from 'vue'
+import { ref, nextTick, computed, onMounted, reactive } from 'vue'
 import { useSettingsStore } from '../../stores/settings'
 
 // Store
@@ -216,7 +208,8 @@ const editingDepartmentBuilding = ref<string | null>(null)
 const editedDepartmentName = ref('')
 const departmentEditInput = ref<HTMLInputElement | null>(null)
 
-// We're combining wards into departments, so we keep only department state
+// Store new department names for each building
+const newDepartments = reactive<Record<string, string>>({})
 
 // Building management
 onMounted(() => {
@@ -227,6 +220,11 @@ onMounted(() => {
   } else {
     console.log('Buildings loaded:', buildings.value.length)
   }
+  
+  // Initialize newDepartments object with empty strings for each building
+  buildings.value.forEach((building: any) => {
+    newDepartments[building.id] = ''
+  })
 })
 
 const confirmAddBuilding = () => {
@@ -261,6 +259,9 @@ const confirmAddBuilding = () => {
         console.log('Store add function failed, adding directly to buildings array')
         settingsStore.buildings.push(newBuildingObj)
       }
+      
+      // Initialize newDepartments for this building
+      newDepartments[newId] = ''
       
       // Clear input field
       newBuilding.value = ''
@@ -301,14 +302,20 @@ const removeBuilding = (buildingId: string) => {
   const building = buildings.value.find((b: any) => b.id === buildingId)
   if (building && confirm(`Are you sure you want to remove building "${building.name}" and all its departments and wards?`)) {
     storeDeleteBuilding(buildingId)
+    
+    // Remove this building from newDepartments
+    delete newDepartments[buildingId]
   }
 }
 
-// Department management
-const addDepartment = (buildingId: string) => {
-  const name = prompt('Enter department name:')
-  if (name && name.trim()) {
-    storeAddDepartment(buildingId, name.trim())
+// Department management - updated to use direct input approach
+const confirmAddDepartment = (buildingId: string) => {
+  const name = newDepartments[buildingId]?.trim()
+  if (name) {
+    storeAddDepartment(buildingId, name)
+    
+    // Clear the input field after adding
+    newDepartments[buildingId] = ''
   }
 }
 
@@ -502,7 +509,9 @@ const removeDepartment = (buildingId: string, departmentId: string) => {
 }
 
 .add-location {
-  margin-top: var(--spacing-sm);
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
 }
 
 .add-building {
@@ -511,7 +520,7 @@ const removeDepartment = (buildingId: string, departmentId: string) => {
   margin-top: var(--spacing-md);
 }
 
-.add-building input, .edit-input {
+.add-building input, .edit-input, .add-location input {
   flex: 1;
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--color-border);
