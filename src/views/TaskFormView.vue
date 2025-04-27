@@ -232,14 +232,35 @@ const isEditing = computed(() => !!props.taskId);
 const isFromArchive = ref(false);
 const currentShiftId = ref<string | null>(null);
 
-// Determine if we're editing from the archive
+// Determine the context we're editing from
 const checkReferrer = () => {
+  // First check the URL for archive context
   if (window.location.href.includes('/archive/')) {
     // Extract shift ID from URL if possible
     const matches = window.location.href.match(/\/archive\/([^/?]+)/);
     if (matches && matches[1]) {
       currentShiftId.value = matches[1];
       isFromArchive.value = true;
+      console.log('Detected editing from archive, shift ID:', currentShiftId.value);
+    }
+  } 
+  
+  // If not detected from URL, try to find the task's shift in archived shifts
+  if (!isFromArchive.value && props.taskId) {
+    // Check if this task belongs to an archived shift
+    const task = getTask(props.taskId);
+    if (task) {
+      // Search in archived shifts for this task
+      const archivedShifts = shiftStore.archivedShifts;
+      for (const shift of archivedShifts) {
+        const found = shift.tasks.find(t => t.id === props.taskId);
+        if (found) {
+          currentShiftId.value = shift.id;
+          isFromArchive.value = true;
+          console.log('Task belongs to archived shift:', shift.id);
+          break;
+        }
+      }
     }
   }
 };
@@ -399,9 +420,24 @@ const findLocationById = (buildingId: string, locationId: string, locationType: 
 const loadTask = () => {
   if (!props.taskId) return;
   
+  // Check if task exists in current shift or archived shifts
   const task = getTask(props.taskId);
   
   if (task) {
+    // If we found the task but haven't identified it's from archive yet,
+    // check to see if it belongs to an archived shift
+    if (!isFromArchive.value) {
+      const archivedShifts = shiftStore.archivedShifts;
+      for (const shift of archivedShifts) {
+        const found = shift.tasks.find(t => t.id === props.taskId);
+        if (found) {
+          currentShiftId.value = shift.id;
+          isFromArchive.value = true;
+          console.log('Task belongs to archived shift (from loadTask):', shift.id);
+          break;
+        }
+      }
+    }
     // Get time from ISO string if available or use defaults
     const receivedTime = task.receivedTime 
       ? new Date(task.receivedTime).toTimeString().substring(0, 5) 
