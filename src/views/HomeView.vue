@@ -148,6 +148,24 @@
     
     <!-- NEW SHIFT VIEW -->
     <section v-else class="new-shift">
+      <!-- Active Shift Notification Banner -->
+      <div v-if="isShiftActive" class="active-shift-notification">
+        <div class="notification-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div class="notification-content">
+          <h3>Active Shift in Progress</h3>
+          <p>There is currently an active shift. You need to end the current shift before starting a new one.</p>
+        </div>
+        <button class="btn-danger" @click="showEndShiftConfirm = true">
+          End Current Shift
+        </button>
+      </div>
+
       <div class="welcome-card">
         <div class="welcome-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -666,5 +684,44 @@ p {
 
 .shift-list-item:last-child {
   border-bottom: none;
+}
+
+/* Active Shift Notification Banner */
+.active-shift-notification {
+  display: flex;
+  align-items: center;
+  background-color: #feecec;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  position: relative;
+}
+
+.notification-icon {
+  color: var(--color-danger);
+  margin-right: var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-content h3 {
+  color: var(--color-danger);
+  font-size: var(--font-size-md);
+  margin-top: 0;
+  margin-bottom: var(--spacing-xs);
+}
+
+.notification-content p {
+  margin: 0;
+  color: var(--color-text);
+}
+
+.active-shift-notification .btn-danger {
+  margin-left: var(--spacing-md);
+  white-space: nowrap;
 }
 </style>
