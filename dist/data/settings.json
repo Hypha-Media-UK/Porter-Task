@@ -1,0 +1,67 @@
+{
+  "supervisors": [
+    "Chris Crombie",
+    "Luke Clements",
+    "Martin Smith",
+    "Martin Fearon",
+    "Sumi"
+  ],
+  "porters": [
+    "Porter 1",
+    "Porter 2",
+    "Porter 3",
+    "Porter 4",
+    "Porter 5",
+    "Porter 6",
+    "Porter 7",
+    "Porter 8",
+    "Porter 9",
+    "Porter 10"
+  ],
+  "jobCategories": {
+    "Patient Transfer": [
+      "Wheelchair",
+      "Stretcher",
+      "Bed",
+      "Rose Cottage"
+    ],
+    "Specimen Delivery": [
+      "Blood Sample",
+      "Urine Sample"
+    ],
+    "Asset Movement": [
+      "Bed (Complete)",
+      "Bed Frame",
+      "Incubator"
+    ],
+    "Gases": [
+      "D - Oxygen",
+      "E - Oxygen",
+      "F - Oxygen",
+      "D - CO2",
+      "F - CO2"
+    ],
+    "Adhoc": [
+      "Documents"
+    ]
+  },
+  "jobCategoryDefaults": [
+    {
+      "category": "Patient Transfer",
+      "itemType": "Rose Cottage",
+      "toBuildingId": "bereavement-center",
+      "toLocationId": "rose-cotage",
+      "toLocationType": "department"
+    }
+  ],
+  "shifts": {
+    "day": {
+      "start": "08:00",
+      "end": "20:00"
+    },
+    "night": {
+      "start": "20:00",
+      "end": "08:00"
+    }
+  }
+}

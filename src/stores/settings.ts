@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { JobCategoriesMap, SettingsData, Building, LocationsData, Porter, JobCategoryDefault, ShiftSchedule } from '@/types'
+import { saveSettings as apiSaveSettings, saveLocations as apiSaveLocations } from '@/utils/api'
 
 /**
  * Store for application settings and location data
@@ -147,22 +148,12 @@ export const useSettingsStore = defineStore('settings', () => {
       
       console.log('Saving settings:', settingsData);
       
-      // First try to save to the actual JSON file via API
+      // First try to save to the Netlify function
       try {
-        const response = await fetch('/api/save-settings', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(settingsData)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to save settings: ${response.status} ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log('Settings saved to file successfully:', result);
+        const result = await apiSaveSettings(settingsData);
+        console.log('Settings saved via Netlify function:', result);
       } catch (apiErr) {
-        console.warn('Could not save settings to file via API:', apiErr);
+        console.warn('Could not save settings via API:', apiErr);
         
         // Fallback to localStorage if API save fails
         try {
@@ -194,22 +185,12 @@ export const useSettingsStore = defineStore('settings', () => {
       
       console.log('Saving location data:', locationData);
       
-      // First try to save to the actual JSON file via API
+      // First try to save to the Netlify function
       try {
-        const response = await fetch('/api/save-locations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(locationData)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to save location data: ${response.status} ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log('Location data saved to file successfully:', result);
+        const result = await apiSaveLocations(locationData);
+        console.log('Location data saved via Netlify function:', result);
       } catch (apiErr) {
-        console.warn('Could not save location data to file via API:', apiErr);
+        console.warn('Could not save location data via API:', apiErr);
         
         // Fallback to localStorage if API save fails
         try {

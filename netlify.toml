@@ -1,0 +1,25 @@
+[build]
+  # Directory to change to before starting a build
+  base = "/"
+  # Directory that contains the deploy-ready HTML files
+  publish = "dist"
+  # Default build command - Skip TypeScript checking
+  command = "vite build"
+
+# Redirects and rewrites
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Proxy Netlify Functions during development
+[dev]
+  framework = "vite"
+  targetPort = 5173
+  port = 8888
+  autoLaunch = false
+
+# Function settings
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
