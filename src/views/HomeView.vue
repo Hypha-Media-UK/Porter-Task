@@ -161,9 +161,14 @@
           <h3>Active Shift in Progress</h3>
           <p>There is currently an active shift. You need to end the current shift before starting a new one.</p>
         </div>
-        <button class="btn-danger" @click="showEndShiftConfirm = true">
-          End Current Shift
-        </button>
+        <div class="notification-actions">
+          <button class="btn-primary" @click="navigate('tasks')">
+            Open Current Shift
+          </button>
+          <button class="btn-danger" @click="showEndShiftConfirm = true">
+            End Current Shift
+          </button>
+        </div>
       </div>
 
       <div class="welcome-card">
@@ -720,8 +725,21 @@ p {
   color: var(--color-text);
 }
 
-.active-shift-notification .btn-danger {
+.notification-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
   margin-left: var(--spacing-md);
+}
+
+.notification-actions button {
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .notification-actions {
+    flex-direction: row;
+  }
 }
 </style>
