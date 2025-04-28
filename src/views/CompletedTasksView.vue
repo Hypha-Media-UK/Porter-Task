@@ -45,7 +45,7 @@
       </li>
     </ul>
     
-    <TabNavigation current-route="tasks" @navigate="navigate" />
+    <!-- Removed TabNavigation as all navigation items are in header -->
   </main>
 </template>
 
@@ -54,7 +54,6 @@ import { inject } from 'vue'
 import { useShiftStore } from '../stores/shift'
 import type { RouteParams } from '../types'
 import TaskCard from '../components/TaskCard.vue'
-import TabNavigation from '../components/TabNavigation.vue'
 
 // Router injection
 const navigate = inject<(route: string, params?: RouteParams) => void>('navigate')
@@ -83,7 +82,7 @@ const navigateToPendingTasks = () => {
   flex-direction: column;
   min-height: 100%;
   padding: var(--spacing-md);
-  padding-bottom: calc(70px + var(--safe-area-inset-bottom));
+  padding-bottom: var(--spacing-md);
   max-width: 800px;
   margin: 0 auto;
   width: 100%;

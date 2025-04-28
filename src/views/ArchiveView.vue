@@ -57,7 +57,7 @@
       </div>
     </section>
     
-    <TabNavigation current-route="archive" @navigate="navigate" />
+    <!-- Removed TabNavigation as all navigation items are in header -->
   </main>
 </template>
 
@@ -66,7 +66,6 @@ import { computed, inject } from 'vue'
 import { useShiftStore } from '../stores/shift'
 import { formatDate, formatTime } from '../utils/date'
 import type { RouteParams, Shift } from '../types'
-import TabNavigation from '../components/TabNavigation.vue'
 
 // Router injection
 const navigate = inject<(route: string, params?: RouteParams) => void>('navigate')
@@ -116,7 +115,7 @@ const viewShiftDetail = (shiftId: string) => {
   flex-direction: column;
   min-height: 100%;
   padding: var(--spacing-md);
-  padding-bottom: calc(70px + var(--safe-area-inset-bottom));
+  padding-bottom: var(--spacing-md);
   max-width: 800px;
   margin: 0 auto;
   width: 100%;

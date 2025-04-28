@@ -42,8 +42,7 @@
         </div>
     </section>
     
-    <!-- Tab navigation -->
-    <TabNavigation current-route="settings" @navigate="navigate" />
+    <!-- Removed TabNavigation as all navigation items are in header -->
   </main>
 </template>
 
@@ -111,7 +110,7 @@ const activeTab = ref('app')
   flex-direction: column;
   min-height: 100%;
   padding: var(--spacing-md);
-  padding-bottom: calc(70px + var(--safe-area-inset-bottom)); /* Space for tab navigation */
+  padding-bottom: var(--spacing-md);
   max-width: 800px;
   margin: 0 auto;
   width: 100%;

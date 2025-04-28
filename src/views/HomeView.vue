@@ -343,7 +343,7 @@
       </div>
     </div>
     
-    <TabNavigation current-route="home" @navigate="navigate" />
+    <!-- Removed TabNavigation as all navigation items are in header -->
   </main>
 </template>
 
