@@ -2,11 +2,15 @@
 
 This directory contains serverless functions that replace the Express server functionality in the production Netlify deployment.
 
+## Data Persistence
+
+These functions now use the Netlify Key-Value Store to persist data across deployments. See the `NETLIFY_PERSISTENCE.md` file in the project root for detailed information about the data persistence solution.
+
 ## Functions Overview
 
 ### `save-settings.js`
 
-This function handles saving application settings data.
+This function handles saving application settings data to the Netlify KV store.
 
 - **HTTP Method**: POST
 - **Path**: `/.netlify/functions/save-settings`
@@ -26,9 +30,24 @@ fetch('/.netlify/functions/save-settings', {
 .then(result => console.log('Settings saved:', result));
 ```
 
+### `get-settings.js`
+
+This function retrieves application settings data from the Netlify KV store.
+
+- **HTTP Method**: GET
+- **Path**: `/.netlify/functions/get-settings`
+- **Response**: JSON object containing the application settings
+
+```javascript
+// Example usage
+fetch('/.netlify/functions/get-settings')
+.then(response => response.json())
+.then(settings => console.log('Retrieved settings:', settings));
+```
+
 ### `save-locations.js`
 
-This function handles saving building and location data.
+This function handles saving building and location data to the Netlify KV store.
 
 - **HTTP Method**: POST
 - **Path**: `/.netlify/functions/save-locations`
@@ -48,11 +67,35 @@ fetch('/.netlify/functions/save-locations', {
 .then(result => console.log('Locations saved:', result));
 ```
 
+### `get-locations.js`
+
+This function retrieves location data from the Netlify KV store.
+
+- **HTTP Method**: GET
+- **Path**: `/.netlify/functions/get-locations`
+- **Response**: JSON object containing buildings, departments, and wards
+
+```javascript
+// Example usage
+fetch('/.netlify/functions/get-locations')
+.then(response => response.json())
+.then(locations => console.log('Retrieved locations:', locations));
+```
+
 ## Data Persistence
 
-In the production environment, these functions would typically connect to a database service such as Fauna DB, Firebase, or other Netlify-compatible persistence solutions. For the current implementation, they simply acknowledge receipt of the data.
+These functions use Netlify's built-in Key-Value store to persist data across deployments. The Key-Value store is:
 
-The application is designed to fall back to `localStorage` if the API calls fail, ensuring that changes aren't lost even if the serverless functions are unavailable.
+- Automatically available on all Netlify sites
+- Requires the `@netlify/functions` package (already installed)
+- Provides a simple, reliable way to store application data without an external database
+
+The application is designed with a fallback mechanism:
+1. First, it tries to read/write data using the Netlify functions and KV store
+2. If that fails, it falls back to browser `localStorage`
+3. As a last resort, it can load data from static JSON files
+
+This ensures data is not lost even if the KV store or serverless functions are temporarily unavailable.
 
 ## Local Development
 

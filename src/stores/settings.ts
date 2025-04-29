@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { JobCategoriesMap, SettingsData, Building, LocationsData, Porter, JobCategoryDefault, ShiftSchedule } from '@/types'
-import { saveSettings as apiSaveSettings, saveLocations as apiSaveLocations } from '@/utils/api'
+import { saveSettings as apiSaveSettings, saveLocations as apiSaveLocations, getSettings as apiGetSettings, getLocations as apiGetLocations } from '@/utils/api'
 
 /**
  * Store for application settings and location data
@@ -45,37 +45,49 @@ export const useSettingsStore = defineStore('settings', () => {
   }
   
   /**
-   * Load settings from API/JSON and localStorage
+   * Load settings from API and localStorage
    */
   async function loadSettings() {
     try {
-      // First try to load from localStorage
-      const localSettings = localStorage.getItem('porterTrackSettings')
-      if (localSettings) {
-        try {
-          const data: SettingsData = JSON.parse(localSettings)
-          // Update state from localStorage
-          updateStateFromData(data)
-          console.log('Settings loaded from localStorage')
-          return true
-        } catch (localErr) {
-          console.warn('Error parsing localStorage settings, falling back to JSON file:', localErr)
+      // First try to load from the API (Netlify function)
+      try {
+        const data = await apiGetSettings()
+        // Update state from API data
+        updateStateFromData(data)
+        console.log('Settings loaded from API')
+        return true
+      } catch (apiErr) {
+        console.warn('Error loading settings from API, falling back to localStorage:', apiErr)
+        
+        // Fallback to localStorage
+        const localSettings = localStorage.getItem('porterTrackSettings')
+        if (localSettings) {
+          try {
+            const data: SettingsData = JSON.parse(localSettings)
+            // Update state from localStorage
+            updateStateFromData(data)
+            console.log('Settings loaded from localStorage')
+            return true
+          } catch (localErr) {
+            console.warn('Error parsing localStorage settings:', localErr)
+          }
         }
+        
+        // If all else fails, load from the static JSON file
+        const response = await fetch('/data/settings.json')
+        
+        if (!response.ok) {
+          throw new Error(`Failed to load settings: ${response.status} ${response.statusText}`)
+        }
+        
+        const data: SettingsData = await response.json()
+        
+        // Update state from JSON file
+        updateStateFromData(data)
+        console.log('Settings loaded from static JSON file')
+        
+        return true
       }
-      
-      // Fallback to the JSON file
-      const response = await fetch('/data/settings.json')
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load settings: ${response.status} ${response.statusText}`)
-      }
-      
-      const data: SettingsData = await response.json()
-      
-      // Update state from JSON file
-      updateStateFromData(data)
-      
-      return true
     } catch (err) {
       console.error('Error loading settings:', err)
       error.value = err instanceof Error ? err.message : 'Failed to load settings'
@@ -109,22 +121,49 @@ export const useSettingsStore = defineStore('settings', () => {
   }
   
   /**
-   * Load location data from API/JSON
+   * Load location data from API and localStorage
    */
   async function loadLocationData() {
     try {
-      const response = await fetch('/data/locations.json')
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load location data: ${response.status} ${response.statusText}`)
+      // First try to load from the API (Netlify function)
+      try {
+        const data = await apiGetLocations()
+        // Update state from API data
+        buildings.value = data.buildings
+        console.log('Locations loaded from API')
+        return true
+      } catch (apiErr) {
+        console.warn('Error loading locations from API, falling back to localStorage:', apiErr)
+        
+        // Fallback to localStorage
+        const localLocations = localStorage.getItem('porterTrackLocations')
+        if (localLocations) {
+          try {
+            const data: LocationsData = JSON.parse(localLocations)
+            // Update state from localStorage
+            buildings.value = data.buildings
+            console.log('Locations loaded from localStorage')
+            return true
+          } catch (localErr) {
+            console.warn('Error parsing localStorage locations:', localErr)
+          }
+        }
+        
+        // If all else fails, load from the static JSON file
+        const response = await fetch('/data/locations.json')
+        
+        if (!response.ok) {
+          throw new Error(`Failed to load location data: ${response.status} ${response.statusText}`)
+        }
+        
+        const data: LocationsData = await response.json()
+        
+        // Update state from JSON file
+        buildings.value = data.buildings
+        console.log('Locations loaded from static JSON file')
+        
+        return true
       }
-      
-      const data: LocationsData = await response.json()
-      
-      // Update state
-      buildings.value = data.buildings
-      
-      return true
     } catch (err) {
       console.error('Error loading location data:', err)
       error.value = err instanceof Error ? err.message : 'Failed to load location data'

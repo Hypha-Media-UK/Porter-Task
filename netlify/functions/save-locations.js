@@ -1,3 +1,5 @@
+const { getKVStore } = require('@netlify/functions');
+
 exports.handler = async (event, context) => {
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
@@ -11,9 +13,13 @@ exports.handler = async (event, context) => {
     // Parse the JSON body
     const locationsData = JSON.parse(event.body);
     
-    // In a real serverless environment, we would use a database or storage service
-    // For demo purposes, we'll just return success
-    console.log('Locations data received:', locationsData);
+    // Get KV store instance
+    const store = getKVStore({ namespace: "appSettings" });
+    
+    // Store the locations in the KV store
+    await store.set("locations", JSON.stringify(locationsData));
+    
+    console.log('Locations data saved to KV store:', locationsData);
     
     return {
       statusCode: 200,
