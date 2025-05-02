@@ -6,7 +6,9 @@
       "departments": [
         {
           "id": "amu",
-          "name": "AMU"
+          "name": "AMU",
+          "frequent": true,
+          "order": 0
         },
         {
           "id": "iau",
@@ -14,7 +16,9 @@
         },
         {
           "id": "itu",
-          "name": "ITU"
+          "name": "ITU",
+          "frequent": true,
+          "order": 1
         },
         {
           "id": "acu",
@@ -22,7 +26,9 @@
         },
         {
           "id": "north-theatres",
-          "name": "North Theatres"
+          "name": "North Theatres",
+          "frequent": true,
+          "order": 2
         },
         {
           "id": "south-theatres",
@@ -46,7 +52,9 @@
         },
         {
           "id": "pharmacy",
-          "name": "Pharmacy"
+          "name": "Pharmacy",
+          "frequent": true,
+          "order": 3
         },
         {
           "id": "gf-xray",
@@ -133,7 +141,9 @@
         },
         {
           "id": "labour-ward",
-          "name": "Labour Ward"
+          "name": "Labour Ward",
+          "frequent": true,
+          "order": 4
         },
         {
           "id": "womens-health-unit",
@@ -147,7 +157,9 @@
       "wards": [
         {
           "id": "eastward1",
-          "name": "Acorn Birth Center"
+          "name": "Acorn Birth Center",
+          "frequent": true,
+          "order": 5
         },
         {
           "id": "eastward2",

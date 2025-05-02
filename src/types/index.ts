@@ -52,6 +52,8 @@ export interface SettingsData {
 export interface LocationItem {
   id: string;
   name: string;
+  frequent?: boolean;
+  order?: number;
 }
 
 export interface Building {

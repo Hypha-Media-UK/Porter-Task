@@ -16,7 +16,8 @@
     "nanoid": "^5.1.5",
     "pinia": "^2.1.7",
     "vue": "^3.3.11",
-    "vue-router": "^4.2.5"
+    "vue-router": "^4.2.5",
+    "vuedraggable": "^2.24.3"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",

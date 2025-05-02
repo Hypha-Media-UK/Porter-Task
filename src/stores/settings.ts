@@ -830,6 +830,8 @@ export const useSettingsStore = defineStore('settings', () => {
     loadSettings,
     loadLocationData,
     updateSettings,
+    saveSettingsToFile,
+    saveLocationDataToFile,
     
     // Supervisor management
     addSupervisor,

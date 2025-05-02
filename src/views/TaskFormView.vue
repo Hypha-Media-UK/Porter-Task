@@ -78,7 +78,7 @@
               >
                 <option value="" disabled>Select location</option>
                 <option v-for="location in allLocations" :key="location.id" :value="location">
-                  {{ location.name }}
+                  {{ location.name }} {{ location.frequent ? '★' : '' }}
                 </option>
               </select>
               
@@ -97,7 +97,7 @@
               >
                 <option value="" disabled>Select location</option>
                 <option v-for="location in allLocations" :key="location.id" :value="location">
-                  {{ location.name }}
+                  {{ location.name }} {{ location.frequent ? '★' : '' }}
                 </option>
               </select>
               
@@ -339,6 +339,8 @@ interface CombinedLocation {
   buildingId: string;
   buildingName: string;
   locationType: 'department' | 'ward';
+  frequent?: boolean;
+  order?: number;
 }
 
 // Selected locations
@@ -487,33 +489,67 @@ const itemTypesForCategory = computed(() => {
 
 // Get all locations from all buildings
 const allLocations = computed(() => {
-  const locations: CombinedLocation[] = [];
+  const frequentLocations: CombinedLocation[] = [];
+  const standardLocations: CombinedLocation[] = [];
   
   buildings.forEach(building => {
     // Add departments
     building.departments.forEach(dept => {
-      locations.push({
+      const location = {
         id: dept.id,
         name: dept.name,
         buildingId: building.id,
         buildingName: building.name,
-        locationType: 'department'
-      });
+        locationType: 'department' as const,
+        frequent: dept.frequent,
+        order: dept.order
+      };
+      
+      if (dept.frequent) {
+        frequentLocations.push(location);
+      } else {
+        standardLocations.push(location);
+      }
     });
     
     // Add wards
     building.wards.forEach(ward => {
-      locations.push({
+      const location = {
         id: ward.id,
         name: ward.name,
         buildingId: building.id,
         buildingName: building.name,
-        locationType: 'ward'
-      });
+        locationType: 'ward' as const,
+        frequent: ward.frequent,
+        order: ward.order
+      };
+      
+      if (ward.frequent) {
+        frequentLocations.push(location);
+      } else {
+        standardLocations.push(location);
+      }
     });
   });
   
-  return locations.sort((a, b) => a.name.localeCompare(b.name));
+  // Sort frequent locations by their order value, falling back to name
+  frequentLocations.sort((a, b) => {
+    // If both have order, sort by order
+    if (a.order !== undefined && b.order !== undefined) {
+      return a.order - b.order;
+    }
+    // If only one has order, prioritize the one with order
+    if (a.order !== undefined) return -1;
+    if (b.order !== undefined) return 1;
+    // If neither has order, sort by name
+    return a.name.localeCompare(b.name);
+  });
+  
+  // Sort standard locations alphabetically
+  standardLocations.sort((a, b) => a.name.localeCompare(b.name));
+  
+  // Combine frequent locations first, then standard locations
+  return [...frequentLocations, ...standardLocations];
 });
 
 // Find location by building and ID

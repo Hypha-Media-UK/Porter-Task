@@ -73,7 +73,10 @@
             <ul class="location-list">
               <li v-for="department in getAllDepartments(building)" :key="department.id" class="location-item">
                 <div class="location-info">
-                  <span v-if="editingDepartment !== department.id || editingDepartmentBuilding !== building.id">{{ department.name }}</span>
+                  <span v-if="editingDepartment !== department.id || editingDepartmentBuilding !== building.id">
+                    {{ department.name }}
+                    <span class="frequent-badge" v-if="department.frequent">Frequent</span>
+                  </span>
                   <input 
                     v-else
                     type="text" 
@@ -117,6 +120,17 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18"></line>
                       <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                  <button 
+                    v-if="editingDepartment !== department.id || editingDepartmentBuilding !== building.id"
+                    class="btn-icon sm" 
+                    @click="toggleFrequent(building.id, department)"
+                    :aria-label="department.frequent ? 'Remove from frequent' : 'Add to frequent'"
+                    :title="department.frequent ? 'Remove from frequent' : 'Add to frequent'"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="{ 'star-filled': department.frequent }">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
                     </svg>
                   </button>
                   <button 
@@ -393,6 +407,56 @@ const removeDepartment = (buildingId: string, departmentId: string) => {
     }
   }
 }
+
+// Toggle a department's "frequent" status
+const toggleFrequent = (buildingId: string, department: any) => {
+  const building = buildings.value.find((b: any) => b.id === buildingId)
+  if (!building) return
+  
+  // Find if it's in departments or wards collection
+  let target
+  let isWard = false
+  
+  target = building.departments.find((d: any) => d.id === department.id)
+  if (!target) {
+    target = building.wards.find((w: any) => w.id === department.id)
+    isWard = true
+  }
+  
+  if (target) {
+    // Toggle the frequent flag
+    target.frequent = !target.frequent
+    
+    // If making frequent, add an initial order value if not present
+    if (target.frequent && target.order === undefined) {
+      // Find the highest current order across all frequent locations
+      let maxOrder = -1
+      
+      // Check all departments in all buildings
+      buildings.value.forEach((b: any) => {
+        // Departments
+        b.departments.forEach((d: any) => {
+          if (d.frequent && d.order !== undefined && d.order > maxOrder) {
+            maxOrder = d.order
+          }
+        })
+        
+        // Wards
+        b.wards.forEach((w: any) => {
+          if (w.frequent && w.order !== undefined && w.order > maxOrder) {
+            maxOrder = w.order
+          }
+        })
+      })
+      
+      // Set order to be one more than the current highest
+      target.order = maxOrder + 1
+    }
+    
+    // Save the changes
+    settingsStore.saveLocationDataToFile()
+  }
+}
 </script>
 
 <style scoped>
@@ -576,5 +640,21 @@ const removeDepartment = (buildingId: string, departmentId: string) => {
 .btn-secondary:hover {
   background-color: var(--color-background-light);
   border-color: var(--color-border-dark);
+}
+
+.frequent-badge {
+  display: inline-block;
+  background-color: var(--color-primary);
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 8px;
+  font-weight: var(--font-weight-medium);
+}
+
+.star-filled {
+  fill: gold;
+  stroke: orange;
 }
 </style>

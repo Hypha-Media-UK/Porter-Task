@@ -34,6 +34,7 @@
         
         <!-- Locations Tab -->
         <div v-if="activeTab === 'locations'" class="tab-pane">
+          <FrequentUsers />
           <BuildingsLocations />
         </div>
         
@@ -55,6 +56,7 @@ import ApplicationSettings from '../components/settings/ApplicationSettings.vue'
 import SupervisorsList from '../components/settings/SupervisorsList.vue'
 import PortersList from '../components/settings/PortersList.vue'
 import BuildingsLocations from '../components/settings/BuildingsLocations.vue'
+import FrequentUsers from '../components/settings/FrequentUsers.vue'
 import JobCategories from '../components/settings/JobCategories.vue'
 
 // Router injection
