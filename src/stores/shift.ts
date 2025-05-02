@@ -742,6 +742,7 @@ export const useShiftStore = defineStore('shift', () => {
    * Update an existing porter assignment
    */
   function updatePorterAssignment(assignmentId: string, updates: {
+    porterId?: string;
     departmentId?: string;
     startTime?: string;
     endTime?: string | null;
@@ -761,6 +762,7 @@ export const useShiftStore = defineStore('shift', () => {
     const assignment = { ...currentShift.value.porterAssignments[assignmentIndex] }
     
     // Update fields
+    if (updates.porterId !== undefined) assignment.porterId = updates.porterId
     if (updates.departmentId !== undefined) assignment.departmentId = updates.departmentId
     if (updates.startTime !== undefined) assignment.startTime = updates.startTime
     if (updates.notes !== undefined) assignment.notes = updates.notes

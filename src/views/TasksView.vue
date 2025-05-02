@@ -672,6 +672,7 @@ const saveAssignment = (assignmentData: {
     if (assignmentData.id) {
       // Update existing assignment
       shiftStore.updatePorterAssignment(assignmentData.id, {
+        porterId: assignmentData.porterId,
         departmentId: assignmentData.departmentId,
         startTime: assignmentData.startTime,
         endTime: assignmentData.endTime,

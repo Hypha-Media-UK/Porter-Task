@@ -217,6 +217,7 @@ function save() {
     notes: form.value.notes || undefined
   }
   
+  console.log('Saving assignment with porter:', form.value.porterId);
   emit('save', assignmentData)
 }
 
