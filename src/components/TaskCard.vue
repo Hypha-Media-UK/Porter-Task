@@ -86,13 +86,21 @@
       <div v-if="!canCompleteTask" class="shift-hours-warning">
         Outside shift hours ({{ getShiftHoursDisplay() }})
       </div>
-      <button 
-        class="btn-success mark-complete-btn"
-        :class="{ 'disabled': !canCompleteTask }"
-        @click.stop="markAsComplete"
-      >
-        Complete
-      </button>
+      <div class="task-action-buttons">
+        <button 
+          class="btn-secondary update-task-btn"
+          @click.stop="updateTask"
+        >
+          Update
+        </button>
+        <button 
+          class="btn-success mark-complete-btn"
+          :class="{ 'disabled': !canCompleteTask }"
+          @click.stop="markAsComplete"
+        >
+          Complete
+        </button>
+      </div>
     </div>
   </article>
 </template>
@@ -118,6 +126,7 @@ const currentShift = shiftStore.currentShift
 // Emits
 const emit = defineEmits<{
   (e: 'complete', taskId: string): void;
+  (e: 'update', taskId: string): void;
 }>()
 
 // Check if a time is within the current shift's schedule
@@ -185,6 +194,11 @@ const markAsComplete = () => {
     const schedule = settingsStore.shifts[shiftType as 'day' | 'night'];
     alert(`Tasks can only be completed during ${shiftType} shift hours (${schedule.start} - ${schedule.end}). Please use the task edit form to set valid completion times.`);
   }
+}
+
+// Navigate to task form to update task
+const updateTask = () => {
+  emit('update', props.task.id);
 }
 </script>
 
@@ -357,7 +371,12 @@ const markAsComplete = () => {
   padding: var(--spacing-xs);
 }
 
-.mark-complete-btn {
+.task-action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.update-task-btn, .mark-complete-btn {
   font-size: var(--font-size-sm);
   padding: var(--spacing-xs) var(--spacing-md);
   border-radius: var(--border-radius-pill);

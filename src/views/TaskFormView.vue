@@ -180,22 +180,35 @@
             Delete
           </button>
           
+          <!-- Update button (main action button) -->
           <button 
             type="button" 
             class="btn-primary" 
+            :disabled="!isFormValid"
+            @click="saveTask(formData.status || 'Pending')"
+          >
+            Update
+          </button>
+          
+          <!-- Mark as Pending button -->
+          <button 
+            v-if="!isEditing || formData.status !== 'Pending'"
+            type="button" 
+            class="btn-secondary" 
             :disabled="!isFormValid"
             @click="saveTask('Pending')"
           >
             Mark as Pending
           </button>
           
+          <!-- Complete Now button -->
           <button 
             type="button" 
             class="btn-success" 
             :disabled="!isFormValid || isTaskReceivedBeforeShift || (!isTaskTimingValid && !isFromArchive)"
             @click="saveTask('Completed')"
           >
-            {{ isEditing ? 'Update' : 'Complete Now' }}
+            Complete Now
           </button>
         </div>
       </form>

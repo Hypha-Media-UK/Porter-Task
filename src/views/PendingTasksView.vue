@@ -41,6 +41,7 @@
         <TaskCard 
           :task="task" 
           @complete="completeTask"
+          @update="viewTaskDetail"
           @click="viewTaskDetail(task.id)"
         />
       </li>
