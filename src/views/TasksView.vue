@@ -180,42 +180,6 @@
             </div>
           </div>
           
-          <h3 class="section-subheading">All Assigned Porters</h3>
-          <div class="card-content">
-            <div v-if="assignedPorters.length === 0" class="empty-state">
-              <p>No porters assigned to this shift.</p>
-              <button v-if="!showPorterManager" class="btn-outline" @click="showPorterManager = true">Assign Porters</button>
-            </div>
-            
-            <div v-else class="porter-list">
-              <div 
-                v-for="porter in assignedPorters" 
-                :key="porter" 
-                class="porter-tag"
-                :class="{ 'porter-assigned': isCurrentlyAssigned(porter) }"
-                @click="openAssignPorter(porter)"
-              >
-                <div class="porter-avatar">{{ porter.charAt(0) }}</div>
-                <div class="porter-details">
-                  <span class="porter-name">{{ porter }}</span>
-                  <span class="porter-assignment" v-if="getCurrentAssignment(porter)">
-                    Currently: {{ getCurrentAssignment(porter) }}
-                  </span>
-                </div>
-                <button 
-                  class="btn-icon remove-porter" 
-                  @click.stop="handleRemovePorterFromShift(porter)" 
-                  title="Remove porter"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-          
           <h3 class="section-subheading">Available Porters</h3>
           <div class="card-content">
             <div v-if="assignedPorters.length === 0" class="empty-state">
