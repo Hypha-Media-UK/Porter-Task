@@ -236,13 +236,27 @@ const porters = computed(() => {
     return allPorters;
   }
   
-  // If there's a current shift with assigned porters, use only those
-  if (shiftStore.currentShift?.assignedPorters?.length) {
-    return shiftStore.currentShift.assignedPorters;
+  const currentShift = shiftStore.currentShift;
+  if (!currentShift || !currentShift.assignedPorters || !currentShift.porterAssignments) {
+    return allPorters;
   }
   
-  // Fallback to all porters if none are specifically assigned
-  return allPorters;
+  // Filter out porters that are currently assigned to departments
+  const now = new Date().toISOString();
+  const assignedToDepartments = new Set(
+    currentShift.porterAssignments
+      .filter(a => a.startTime <= now && (!a.endTime || a.endTime > now))
+      .map(a => a.porterId)
+  );
+  
+  // If editing a task where a porter is already assigned, include that porter
+  // even if they're assigned to a department
+  if (isEditing.value && formData.value.allocatedStaff) {
+    assignedToDepartments.delete(formData.value.allocatedStaff);
+  }
+  
+  // Return only porters that are assigned to the shift but not to any department
+  return currentShift.assignedPorters.filter(porter => !assignedToDepartments.has(porter));
 });
 
 // State
