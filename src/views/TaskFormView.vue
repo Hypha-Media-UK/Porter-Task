@@ -155,6 +155,16 @@
           </div>
         </div>
         
+        <!-- Warning messages -->
+        <div v-if="!isFromArchive && isTaskReceivedBeforeShift" class="alert alert-warning">
+          <strong>Task received outside of shift hours.</strong> This task will be marked as Pending until times are adjusted.
+        </div>
+        
+        <div v-if="!isFromArchive && !isTaskTimingValid" class="alert alert-warning">
+          <strong>Time validation:</strong> To mark as Complete, both Allocated and Completed times must be within shift hours:
+          {{ getShiftHoursDisplay() }}
+        </div>
+
         <div class="form-actions">
           <button type="button" class="btn-secondary" @click="cancel">
             Cancel
@@ -182,7 +192,7 @@
           <button 
             type="button" 
             class="btn-success" 
-            :disabled="!isFormValid"
+            :disabled="!isFormValid || isTaskReceivedBeforeShift || (!isTaskTimingValid && !isFromArchive)"
             @click="saveTask('Completed')"
           >
             {{ isEditing ? 'Update' : 'Complete Now' }}
@@ -376,6 +386,71 @@ watch(selectedToLocation, (newLocation) => {
     };
   }
 });
+
+// Check if a time is within the current shift's schedule
+const isTimeWithinShiftSchedule = (timeString: string): boolean => {
+  if (!shiftStore.currentShift) return false;
+  
+  // Get shift type and schedule
+  const shiftType = shiftStore.currentShift.type.toLowerCase();
+  const schedule = settingsStore.shifts[shiftType as 'day' | 'night'];
+  
+  // Handle overnight shifts (e.g., 20:00 - 08:00)
+  const isOvernight = schedule.end < schedule.start;
+  
+  // Get hours and minutes
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const timeValue = hours * 60 + minutes; // Convert to minutes
+  
+  // Get schedule times in minutes
+  const [startHours, startMinutes] = schedule.start.split(':').map(Number);
+  const [endHours, endMinutes] = schedule.end.split(':').map(Number);
+  const startValue = startHours * 60 + startMinutes;
+  const endValue = endHours * 60 + endMinutes;
+  
+  if (isOvernight) {
+    // For overnight shifts (e.g., 20:00 - 08:00), time is valid if:
+    // 1. It's after start time (e.g., >= 20:00), OR
+    // 2. It's before end time (e.g., <= 08:00)
+    return timeValue >= startValue || timeValue <= endValue;
+  } else {
+    // For day shifts, time is valid if between start and end
+    return timeValue >= startValue && timeValue <= endValue;
+  }
+};
+
+// Check if a task needs to be marked as pending due to being outside shift hours
+const isTaskTimingValid = computed(() => {
+  if (isFromArchive.value) return true; // Always valid for archived tasks
+  
+  const allocatedTimeValid = isTimeWithinShiftSchedule(formData.value.allocatedTime);
+  
+  if (formData.value.status === 'Completed') {
+    // For completed tasks, both allocated and completed times must be valid
+    const completedTimeValid = isTimeWithinShiftSchedule(formData.value.completedTime);
+    return allocatedTimeValid && completedTimeValid;
+  }
+  
+  // For pending tasks, just check allocated time
+  return allocatedTimeValid;
+});
+
+// Check if task was received before shift started
+const isTaskReceivedBeforeShift = computed(() => {
+  if (!shiftStore.currentShift || isFromArchive.value) return false;
+  
+  return !isTimeWithinShiftSchedule(formData.value.receivedTime);
+});
+
+// Helper to display shift hours for warnings/messages
+const getShiftHoursDisplay = (): string => {
+  if (!shiftStore.currentShift) return '';
+  
+  const shiftType = shiftStore.currentShift.type.toLowerCase();
+  const schedule = settingsStore.shifts[shiftType as 'day' | 'night'];
+  
+  return `${schedule.start} to ${schedule.end}`;
+};
 
 // Form validation
 const isFormValid = computed(() => {

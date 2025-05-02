@@ -575,27 +575,49 @@ const portersWithAssignments = computed(() => {
   return porters.filter(p => p.assignments.length > 0);
 });
 
-// Timeline data
+// Timeline data based on shift schedule
 const timelineHours = computed(() => {
-  // Create an array of hour labels for the timeline (usually 24 hours)
-  // Adjusted to only show relevant hours based on shift times
+  if (!currentShift) return [];
+  
+  // Get shift type and schedule
+  const shiftType = currentShift.type.toLowerCase();
+  const schedule = settingsStore.shifts[shiftType as 'day' | 'night'];
+  
+  // Parse start and end times
+  const [startHoursStr, startMinutesStr] = schedule.start.split(':');
+  const [endHoursStr, endMinutesStr] = schedule.end.split(':');
+  
+  const startHour = parseInt(startHoursStr);
+  const endHour = parseInt(endHoursStr);
+  
   const hours = [];
-  const startHour = 6; // 6:00
-  const endHour = 23; // 23:00
   
-  for (let i = startHour; i <= endHour; i++) {
-    hours.push({
-      hour: i,
-      label: `${i.toString().padStart(2, '0')}`
-    });
-  }
+  // Handle overnight shifts (e.g., 20:00 - 08:00)
+  const isOvernight = endHour < startHour;
   
-  // If night shift, also add hours from midnight to 6 AM
-  for (let i = 0; i < startHour; i++) {
-    hours.push({
-      hour: i,
-      label: `${i.toString().padStart(2, '0')}`
-    });
+  if (isOvernight) {
+    // For overnight shifts, show from start hour to midnight, then midnight to end hour
+    for (let i = startHour; i < 24; i++) {
+      hours.push({
+        hour: i,
+        label: `${i.toString().padStart(2, '0')}`
+      });
+    }
+    
+    for (let i = 0; i <= endHour; i++) {
+      hours.push({
+        hour: i,
+        label: `${i.toString().padStart(2, '0')}`
+      });
+    }
+  } else {
+    // For day shifts, show from start hour to end hour
+    for (let i = startHour; i <= endHour; i++) {
+      hours.push({
+        hour: i,
+        label: `${i.toString().padStart(2, '0')}`
+      });
+    }
   }
   
   return hours;
