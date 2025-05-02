@@ -652,8 +652,14 @@ export const useShiftStore = defineStore('shift', () => {
     // Remove the shift from archived shifts
     archivedShifts.value.splice(shiftIndex, 1)
     
-    // In a real app, we would also delete from API/local storage here
-    console.log('Shift deleted:', shiftId)
+    // Update localStorage to persist the deletion
+    try {
+      localStorage.setItem(ARCHIVED_SHIFTS_STORAGE_KEY, JSON.stringify(archivedShifts.value))
+      console.log('Shift deleted and localStorage updated:', shiftId)
+    } catch (err) {
+      console.error('Error updating localStorage after shift deletion:', err)
+      // Even if localStorage update fails, keep the state updated
+    }
     
     return true
   }
@@ -686,8 +692,18 @@ export const useShiftStore = defineStore('shift', () => {
     // Remove from archived shifts
     archivedShifts.value.splice(shiftIndex, 1)
     
-    // In a real app, we would update API/local storage here
-    console.log('Shift reopened:', shift)
+    // Update localStorage
+    try {
+      // Update current shift in localStorage
+      localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(shift))
+      
+      // Update archived shifts in localStorage
+      localStorage.setItem(ARCHIVED_SHIFTS_STORAGE_KEY, JSON.stringify(archivedShifts.value))
+      
+      console.log('Shift reopened and localStorage updated:', shift)
+    } catch (err) {
+      console.error('Error updating localStorage after reopening shift:', err)
+    }
     
     return shift
   }
