@@ -34,18 +34,119 @@
         </div>
       </div>
       
-      <!-- Porter Management Card -->
-      <div class="dashboard-card porters-card">
+      <!-- Navigation Tabs -->
+      <div class="tabs-container">
+        <div class="tabs">
+          <button 
+            class="tab" 
+            :class="{ active: activeTab === 'tasks' }" 
+            @click="activeTab = 'tasks'"
+          >
+            Tasks
+          </button>
+          <button 
+            class="tab" 
+            :class="{ active: activeTab === 'porters' }" 
+            @click="activeTab = 'porters'"
+          >
+            Porters
+          </button>
+        </div>
+      </div>
+      
+      <!-- Tasks Tab Content -->
+      <div v-if="activeTab === 'tasks'">
+        <!-- Task Statistics Card -->
+        <div class="dashboard-card stats-card">
+          <div class="card-header">
+            <div class="title-area">
+              <h2>Task Statistics</h2>
+            </div>
+          </div>
+          
+          <div class="card-content">
+            <div class="stats-grid">
+              <div class="stat-box" @click="navigateToPendingTasks">
+                <div class="stat-header">
+                  <span class="stat-label">Pending Tasks</span>
+                  <span class="stat-indicator pending"></span>
+                </div>
+                <div class="stat-value">{{ pendingTasks.length }}</div>
+                <div class="stat-action">View &rarr;</div>
+              </div>
+              
+              <div class="stat-box" @click="navigateToCompletedTasks">
+                <div class="stat-header">
+                  <span class="stat-label">Completed Tasks</span>
+                  <span class="stat-indicator completed"></span>
+                </div>
+                <div class="stat-value">{{ completedTasks.length }}</div>
+                <div class="stat-action">View &rarr;</div>
+              </div>
+              
+              <div class="stat-box total">
+                <div class="stat-header">
+                  <span class="stat-label">Total Tasks</span>
+                  <span class="stat-indicator total"></span>
+                </div>
+                <div class="stat-value">{{ currentShift.tasks.length }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Recent Tasks Card -->
+        <div v-if="pendingTasks.length > 0" class="dashboard-card tasks-card">
+          <div class="card-header">
+            <div class="title-area">
+              <h2>Recent Tasks</h2>
+            </div>
+            <button class="btn-text" @click="navigateToPendingTasks">View All</button>
+          </div>
+          
+          <div class="card-content">
+            <div class="tasks-list">
+              <div 
+                v-for="task in recentPendingTasks" 
+                :key="task.id"
+                class="task-item"
+                @click="viewTaskDetail(task.id)"
+              >
+                <TaskCard :task="task" :compact="true" />
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Empty State -->
+        <div v-else-if="currentShift.tasks.length === 0" class="dashboard-card empty-card">
+          <div class="card-content centered">
+            <div class="empty-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                <path d="M12 11v6"></path>
+                <path d="M9 18h6"></path>
+              </svg>
+            </div>
+            <h3>No Tasks Yet</h3>
+            <p>Click the + button to create your first task</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Porters Tab Content -->
+      <div v-else-if="activeTab === 'porters'" class="dashboard-card porters-card">
         <div class="card-header">
           <div class="title-area">
-            <h2>Porters</h2>
+            <h2>Porters Management</h2>
           </div>
           <button 
             v-if="!showPorterManager" 
             class="btn-primary"
             @click="showPorterManager = true"
           >
-            Manage Porters
+            Add Porter
           </button>
           <button 
             v-else 
@@ -89,7 +190,6 @@
               <div class="porter-avatar">{{ porter.charAt(0) }}</div>
               <span class="porter-name">{{ porter }}</span>
               <button 
-                v-if="showPorterManager" 
                 class="btn-icon remove-porter" 
                 @click="handleRemovePorterFromShift(porter)" 
                 title="Remove porter"
@@ -101,84 +201,6 @@
               </button>
             </div>
           </div>
-        </div>
-      </div>
-      
-      <!-- Task Statistics Card -->
-      <div class="dashboard-card stats-card">
-        <div class="card-header">
-          <div class="title-area">
-            <h2>Task Statistics</h2>
-          </div>
-        </div>
-        
-        <div class="card-content">
-          <div class="stats-grid">
-            <div class="stat-box" @click="navigateToPendingTasks">
-              <div class="stat-header">
-                <span class="stat-label">Pending Tasks</span>
-                <span class="stat-indicator pending"></span>
-              </div>
-              <div class="stat-value">{{ pendingTasks.length }}</div>
-              <div class="stat-action">View &rarr;</div>
-            </div>
-            
-            <div class="stat-box" @click="navigateToCompletedTasks">
-              <div class="stat-header">
-                <span class="stat-label">Completed Tasks</span>
-                <span class="stat-indicator completed"></span>
-              </div>
-              <div class="stat-value">{{ completedTasks.length }}</div>
-              <div class="stat-action">View &rarr;</div>
-            </div>
-            
-            <div class="stat-box total">
-              <div class="stat-header">
-                <span class="stat-label">Total Tasks</span>
-                <span class="stat-indicator total"></span>
-              </div>
-              <div class="stat-value">{{ currentShift.tasks.length }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Recent Tasks Card -->
-      <div v-if="pendingTasks.length > 0" class="dashboard-card tasks-card">
-        <div class="card-header">
-          <div class="title-area">
-            <h2>Recent Tasks</h2>
-          </div>
-          <button class="btn-text" @click="navigateToPendingTasks">View All</button>
-        </div>
-        
-        <div class="card-content">
-          <div class="tasks-list">
-            <div 
-              v-for="task in recentPendingTasks" 
-              :key="task.id"
-              class="task-item"
-              @click="viewTaskDetail(task.id)"
-            >
-              <TaskCard :task="task" :compact="true" />
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Empty State -->
-      <div v-else-if="currentShift.tasks.length === 0" class="dashboard-card empty-card">
-        <div class="card-content centered">
-          <div class="empty-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-              <path d="M12 11v6"></path>
-              <path d="M9 18h6"></path>
-            </svg>
-          </div>
-          <h3>No Tasks Yet</h3>
-          <p>Click the + button to create your first task</p>
         </div>
       </div>
     </section>
@@ -237,6 +259,7 @@ const navigate = inject<(route: string, params?: RouteParams) => void>('navigate
 const showEndShiftConfirm = ref(false)
 const showPorterManager = ref(false)
 const selectedPorter = ref('')
+const activeTab = ref('tasks') // Default tab
 
 // Stores
 const shiftStore = useShiftStore()
@@ -441,6 +464,52 @@ h3 {
 
 .night-text {
   color: var(--color-secondary);
+}
+
+/* Tabs Container */
+.tabs-container {
+  margin-bottom: var(--spacing-md);
+  grid-column: 1 / -1;
+}
+
+.tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: var(--spacing-xs);
+}
+
+.tab {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: none;
+  border: none;
+  border-radius: var(--border-radius-pill);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-md);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.tab.active {
+  color: var(--color-primary);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--color-primary);
+  border-radius: var(--border-radius-pill);
+}
+
+.tab:hover:not(.active) {
+  color: var(--color-text);
+  background-color: rgba(0, 0, 0, 0.03);
 }
 
 /* Info Grid */
