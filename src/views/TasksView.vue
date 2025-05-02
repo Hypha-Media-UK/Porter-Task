@@ -547,13 +547,13 @@ const timelineHours = computed(() => {
   // Create an array of hour labels for the timeline (usually 24 hours)
   // Adjusted to only show relevant hours based on shift times
   const hours = [];
-  const startHour = 6; // 6 AM
-  const endHour = 23; // 11 PM
+  const startHour = 6; // 6:00
+  const endHour = 23; // 23:00
   
   for (let i = startHour; i <= endHour; i++) {
     hours.push({
       hour: i,
-      label: `${i % 12 === 0 ? 12 : i % 12}${i < 12 ? 'am' : 'pm'}`
+      label: `${i.toString().padStart(2, '0')}`
     });
   }
   
@@ -561,7 +561,7 @@ const timelineHours = computed(() => {
   for (let i = 0; i < startHour; i++) {
     hours.push({
       hour: i,
-      label: `${i % 12 === 0 ? 12 : i % 12}${i < 12 ? 'am' : 'pm'}`
+      label: `${i.toString().padStart(2, '0')}`
     });
   }
   
