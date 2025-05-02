@@ -1,7 +1,7 @@
 <template>
   <main class="tasks-view">
     <header class="top-header">
-      <h1>Task Management</h1>
+      <h1>Shift Management</h1>
     </header>
     
     <section v-if="currentShift" class="task-summary-card">
@@ -16,6 +16,69 @@
         <button class="btn-outline btn-small btn-danger" @click="confirmEndShift">
           End Shift
         </button>
+      </div>
+
+      <!-- Porter Management Section -->
+      <div class="porters-section">
+        <div class="section-title">
+          <h3>Assigned Porters</h3>
+          <button 
+            v-if="!showPorterManager" 
+            class="btn-small btn-outline"
+            @click="showPorterManager = true"
+          >
+            Manage Porters
+          </button>
+          <button 
+            v-else 
+            class="btn-small btn-outline"
+            @click="showPorterManager = false"
+          >
+            Done
+          </button>
+        </div>
+
+        <div v-if="showPorterManager" class="porter-management">
+          <div class="porter-selection">
+            <select 
+              v-model="selectedPorter" 
+              class="form-control"
+              :disabled="!availablePorters.length"
+            >
+              <option value="" disabled>Select porter</option>
+              <option v-for="porter in availablePorters" :key="porter" :value="porter">
+                {{ porter }}
+              </option>
+            </select>
+            <button 
+              class="btn-primary btn-small" 
+              @click="handleAddPorterToShift"
+              :disabled="!selectedPorter"
+            >
+              Add
+            </button>
+          </div>
+        </div>
+
+        <div v-if="assignedPorters.length === 0" class="empty-porters">
+          <p>No porters assigned to this shift.</p>
+        </div>
+        
+        <div v-else class="assigned-porters">
+          <div class="porter-tags">
+            <div v-for="porter in assignedPorters" :key="porter" class="porter-tag">
+              <span class="porter-name">{{ porter }}</span>
+              <button 
+                v-if="showPorterManager" 
+                class="remove-porter" 
+                @click="handleRemovePorterFromShift(porter)" 
+                title="Remove porter"
+              >
+                &times;
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
       
       <div class="task-stats">
@@ -109,6 +172,7 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted } from 'vue'
 import { useShiftStore } from '../stores/shift'
+import { useSettingsStore } from '../stores/settings'
 import { formatDate } from '../utils/date'
 import type { RouteParams } from '../types'
 import TaskCard from '../components/TaskCard.vue'
@@ -118,14 +182,30 @@ const navigate = inject<(route: string, params?: RouteParams) => void>('navigate
 
 // State
 const showEndShiftConfirm = ref(false)
+const showPorterManager = ref(false)
+const selectedPorter = ref('')
 
-// Store
+// Stores
 const shiftStore = useShiftStore()
-const { currentShift, isLoading, pendingTasks, completedTasks, endShift } = shiftStore
+const settingsStore = useSettingsStore()
+const { isLoading, pendingTasks, completedTasks, endShift, addPorterToShift, removePorterFromShift } = shiftStore
+const currentShift = shiftStore.currentShift
+const { porters: allPorters } = settingsStore
 
 // Computed
 const recentPendingTasks = computed(() => {
   return pendingTasks.slice(0, 3)
+})
+
+// Porter management computed properties
+const assignedPorters = computed(() => {
+  if (!currentShift || !currentShift.assignedPorters) return []
+  return currentShift.assignedPorters
+})
+
+const availablePorters = computed(() => {
+  // Filter out porters that are already assigned
+  return allPorters.filter(porter => !assignedPorters.value.includes(porter))
 })
 
 // Methods
@@ -155,6 +235,32 @@ const endCurrentShift = () => {
   
   // Navigate to home screen after ending shift
   if (navigate) navigate('home')
+}
+
+// Porter management methods
+const handleAddPorterToShift = () => {
+  if (!selectedPorter.value) return
+  
+  try {
+    // Add the porter to the current shift
+    addPorterToShift(selectedPorter.value)
+    
+    // Reset selection after adding
+    selectedPorter.value = ''
+  } catch (error) {
+    console.error('Error adding porter:', error)
+    alert('Failed to add porter: ' + (error instanceof Error ? error.message : String(error)))
+  }
+}
+
+const handleRemovePorterFromShift = (porter: string) => {
+  try {
+    // Remove the porter from the current shift
+    removePorterFromShift(porter)
+  } catch (error) {
+    console.error('Error removing porter:', error)
+    alert('Failed to remove porter: ' + (error instanceof Error ? error.message : String(error)))
+  }
 }
 </script>
 
@@ -189,9 +295,9 @@ h2 {
 }
 
 h3 {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-sm);
+  margin: 0;
 }
 
 /* Task Summary Card */
@@ -238,6 +344,91 @@ h3 {
   color: var(--color-text-secondary);
 }
 
+/* Porter Management Styles */
+.porters-section {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.porter-management {
+  margin-bottom: var(--spacing-md);
+}
+
+.porter-selection {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.porter-selection select {
+  flex: 1;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  background-color: white;
+  font-size: var(--font-size-sm);
+}
+
+.btn-small {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.btn-outline {
+  background: none;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+
+.btn-outline:hover {
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+}
+
+.empty-porters {
+  background-color: var(--color-secondary-light);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.porter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.porter-tag {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  padding: 2px var(--spacing-sm);
+  border-radius: var(--border-radius-pill);
+  font-size: var(--font-size-sm);
+}
+
+.remove-porter {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  line-height: 1;
+  padding: 0 0 0 var(--spacing-xs);
+}
+
+/* Task Stats */
 .task-stats {
   display: flex;
   padding: var(--spacing-md);
