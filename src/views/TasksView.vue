@@ -800,6 +800,10 @@ h3 {
     grid-column: 1 / 3;
   }
   
+  .porters-card.full-width {
+    grid-column: 1 / 3;
+  }
+  
   .porters-card {
     grid-column: span 1;
   }
