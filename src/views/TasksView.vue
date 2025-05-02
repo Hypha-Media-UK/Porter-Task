@@ -180,7 +180,7 @@
             </div>
           </div>
           
-          <h3 class="section-subheading">Assigned Porters</h3>
+          <h3 class="section-subheading">Available Porters</h3>
           <div class="card-content">
             <div v-if="assignedPorters.length ===
             0" class="empty-state">
@@ -188,9 +188,13 @@
               <button v-if="!showPorterManager" class="btn-outline" @click="showPorterManager = true">Assign Porters</button>
             </div>
             
+            <div v-else-if="unassignedPorters.length === 0" class="empty-state">
+              <p>All porters are currently assigned to departments.</p>
+            </div>
+            
             <div v-else class="porter-list">
               <div 
-                v-for="porter in assignedPorters" 
+                v-for="porter in unassignedPorters" 
                 :key="porter" 
                 class="porter-tag"
                 @click="openAssignPorter(porter)"
@@ -439,8 +443,24 @@ const assignedPorters = computed(() => {
 })
 
 const availablePorters = computed(() => {
-  // Filter out porters that are already assigned
+  // Filter out porters that are already assigned to the shift
   return allPorters.filter(porter => !assignedPorters.value.includes(porter))
+})
+
+// Porters assigned to the shift but not currently assigned to a department
+const unassignedPorters = computed(() => {
+  if (!currentShift || !currentShift.assignedPorters || !currentShift.porterAssignments) return []
+  
+  // Get porters that are currently assigned to departments
+  const now = new Date().toISOString()
+  const assignedToDepartments = new Set(
+    currentShift.porterAssignments
+      .filter(a => a.startTime <= now && (!a.endTime || a.endTime > now))
+      .map(a => a.porterId)
+  )
+  
+  // Return only porters that are assigned to the shift but not to any department
+  return assignedPorters.value.filter(porter => !assignedToDepartments.has(porter))
 })
 
 // Methods
