@@ -9,10 +9,7 @@
       <div class="dashboard-card shift-overview">
         <div class="card-header">
           <div class="title-area">
-            <h2>Current Shift</h2>
-            <div class="shift-badge" :class="currentShift.type.toLowerCase()">
-              {{ currentShift.type }}
-            </div>
+            <h2 :class="currentShift.type.toLowerCase() + '-text'">{{ currentShift.type }} Shift</h2>
           </div>
           <button class="btn-danger" @click="confirmEndShift">
             End Shift
@@ -436,6 +433,14 @@ h3 {
 
 .shift-badge.night {
   background-color: var(--color-secondary);
+}
+
+.day-text {
+  color: var(--color-primary);
+}
+
+.night-text {
+  color: var(--color-secondary);
 }
 
 /* Info Grid */
