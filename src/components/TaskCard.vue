@@ -83,8 +83,12 @@
     </div>
     
     <div v-if="!compact && task.status === 'Pending'" class="task-action-ribbon">
+      <div v-if="!canCompleteTask" class="shift-hours-warning">
+        Outside shift hours ({{ getShiftHoursDisplay() }})
+      </div>
       <button 
         class="btn-success mark-complete-btn"
+        :class="{ 'disabled': !canCompleteTask }"
         @click.stop="markAsComplete"
       >
         Complete
@@ -94,7 +98,9 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, computed } from 'vue'
+import { useSettingsStore } from '../stores/settings'
+import { useShiftStore } from '../stores/shift'
 import type { Task } from '../types'
 import { formatTime } from '../utils/date'
 
@@ -104,14 +110,81 @@ const props = defineProps<{
   compact?: boolean;
 }>()
 
+// Stores
+const settingsStore = useSettingsStore()
+const shiftStore = useShiftStore()
+const currentShift = shiftStore.currentShift
+
 // Emits
 const emit = defineEmits<{
   (e: 'complete', taskId: string): void;
 }>()
 
+// Check if a time is within the current shift's schedule
+const isTimeWithinShiftSchedule = (timeString: string): boolean => {
+  if (!currentShift) return false;
+  
+  // Get shift type and schedule
+  const shiftType = currentShift.type.toLowerCase();
+  const schedule = settingsStore.shifts[shiftType as 'day' | 'night'];
+  
+  // Handle overnight shifts (e.g., 20:00 - 08:00)
+  const isOvernight = schedule.end < schedule.start;
+  
+  // Get hours and minutes from the timeString (which is ISO format)
+  const date = new Date(timeString);
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const timeValue = hours * 60 + minutes; // Convert to minutes
+  
+  // Get schedule times in minutes
+  const [startHours, startMinutes] = schedule.start.split(':').map(Number);
+  const [endHours, endMinutes] = schedule.end.split(':').map(Number);
+  const startValue = startHours * 60 + startMinutes;
+  const endValue = endHours * 60 + endMinutes;
+  
+  if (isOvernight) {
+    // For overnight shifts (e.g., 20:00 - 08:00), time is valid if:
+    // 1. It's after start time (e.g., >= 20:00), OR
+    // 2. It's before end time (e.g., <= 08:00)
+    return timeValue >= startValue || timeValue <= endValue;
+  } else {
+    // For day shifts, time is valid if between start and end
+    return timeValue >= startValue && timeValue <= endValue;
+  }
+};
+
+// Helper to display shift hours for warnings/messages
+const getShiftHoursDisplay = (): string => {
+  if (!currentShift) return '';
+  
+  const shiftType = currentShift.type.toLowerCase();
+  const schedule = settingsStore.shifts[shiftType as 'day' | 'night'];
+  
+  return `${schedule.start} to ${schedule.end}`;
+};
+
+// Check if we can complete the task based on shift hours
+const canCompleteTask = computed(() => {
+  if (!currentShift) return false;
+  
+  // Current time must be within shift hours
+  const now = new Date();
+  const currentTimeString = now.toISOString();
+  return isTimeWithinShiftSchedule(currentTimeString);
+});
+
 // Actions
 const markAsComplete = () => {
-  emit('complete', props.task.id)
+  // Only allow completion if within shift hours
+  if (canCompleteTask.value) {
+    emit('complete', props.task.id);
+  } else {
+    // Show alert if outside shift hours
+    const shiftType = currentShift?.type.toLowerCase() || 'current';
+    const schedule = settingsStore.shifts[shiftType as 'day' | 'night'];
+    alert(`Tasks can only be completed during ${shiftType} shift hours (${schedule.start} - ${schedule.end}). Please use the task edit form to set valid completion times.`);
+  }
 }
 </script>
 
@@ -271,16 +344,29 @@ const markAsComplete = () => {
 
 .task-action-ribbon {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   padding: var(--spacing-sm) var(--spacing-md);
   background-color: rgba(var(--color-success-rgb), 0.05);
   border-top: 1px solid var(--color-border-light);
+}
+
+.shift-hours-warning {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+  padding: var(--spacing-xs);
 }
 
 .mark-complete-btn {
   font-size: var(--font-size-sm);
   padding: var(--spacing-xs) var(--spacing-md);
   border-radius: var(--border-radius-pill);
+}
+
+.mark-complete-btn.disabled {
+  background-color: var(--color-text-light);
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 /* Compact variation */
