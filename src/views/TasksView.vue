@@ -646,7 +646,16 @@ const calculateTimeWidth = (startTimeString: string, endTimeString?: string): nu
 };
 
 const calculateCurrentTimePosition = (): number => {
+  // Get current date in local timezone
   const now = new Date();
+  
+  // Debug the time we're using for calculation
+  console.log('Current local time for marker:', 
+    now.getHours() + ':' + now.getMinutes(), 
+    '(' + now.toLocaleTimeString() + ')'
+  );
+  
+  // Get hours and minutes directly from Date object
   const hours = now.getHours();
   const minutes = now.getMinutes();
   
