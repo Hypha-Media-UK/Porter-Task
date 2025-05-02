@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { JobCategoriesMap, SettingsData, Building, LocationsData, Porter, JobCategoryDefault, ShiftSchedule } from '@/types'
+import type { JobCategoriesMap, SettingsData, Building, LocationsData, Porter, JobCategoryDefault, ShiftSchedule, DesignationDepartment } from '@/types'
 import { saveSettings as apiSaveSettings, saveLocations as apiSaveLocations } from '@/utils/api'
 
 /**
@@ -13,6 +13,14 @@ export const useSettingsStore = defineStore('settings', () => {
   const jobCategories = ref<JobCategoriesMap>({})
   const buildings = ref<Building[]>([])
   const jobCategoryDefaults = ref<JobCategoryDefault[]>([])
+  const designationDepartments = ref<DesignationDepartment[]>([
+    { id: 'ae', name: 'A+E', color: '#d63031' },
+    { id: 'ct', name: 'CT', color: '#0984e3' },
+    { id: 'mri', name: 'MRI', color: '#00b894' },
+    { id: 'amu', name: 'AMU', color: '#6c5ce7' },
+    { id: 'pharmacy', name: 'Pharmacy', color: '#fdcb6e' },
+    { id: 'meals', name: 'Meals', color: '#e17055' }
+  ])
   const shifts = ref<ShiftSchedule>({
     day: { start: '08:00', end: '16:00' },
     night: { start: '20:00', end: '04:00' }
@@ -105,6 +113,10 @@ export const useSettingsStore = defineStore('settings', () => {
     
     if (data.shifts) {
       shifts.value = data.shifts
+    }
+    
+    if (data.designationDepartments) {
+      designationDepartments.value = data.designationDepartments
     }
   }
   
@@ -734,6 +746,73 @@ export const useSettingsStore = defineStore('settings', () => {
     return true;
   }
   
+  /**
+   * Designation Department management
+   */
+  function addDesignationDepartment(name: string, color?: string) {
+    if (!name.trim() || designationDepartments.value.some(d => d.name === name)) {
+      return false
+    }
+    
+    const newId = name.toLowerCase().replace(/\s+/g, '-')
+    
+    // Check if ID already exists
+    if (designationDepartments.value.some(d => d.id === newId)) {
+      return false
+    }
+    
+    designationDepartments.value.push({
+      id: newId,
+      name,
+      color: color || '#' + Math.floor(Math.random()*16777215).toString(16) // Random color if not provided
+    })
+    
+    // Save settings to file
+    saveSettingsToFile()
+    
+    return true
+  }
+  
+  function updateDesignationDepartment(departmentId: string, newName: string, newColor?: string) {
+    const department = designationDepartments.value.find(d => d.id === departmentId)
+    if (!department || !newName.trim()) {
+      return false
+    }
+    
+    // Check if new name already exists for another department
+    if (designationDepartments.value.some(d => d.name === newName && d.id !== departmentId)) {
+      return false
+    }
+    
+    department.name = newName
+    if (newColor) {
+      department.color = newColor
+    }
+    
+    // Save settings to file
+    saveSettingsToFile()
+    
+    return true
+  }
+  
+  function deleteDesignationDepartment(departmentId: string) {
+    const index = designationDepartments.value.findIndex(d => d.id === departmentId)
+    if (index === -1) {
+      return false
+    }
+    
+    designationDepartments.value.splice(index, 1)
+    
+    // Save settings to file
+    saveSettingsToFile()
+    
+    return true
+  }
+  
+  function getDesignationDepartment(departmentId: string): DesignationDepartment | undefined {
+    return designationDepartments.value.find(d => d.id === departmentId)
+  }
+  
   return {
     // State
     supervisors,
@@ -741,6 +820,7 @@ export const useSettingsStore = defineStore('settings', () => {
     jobCategories,
     buildings,
     jobCategoryDefaults,
+    designationDepartments,
     shifts,
     isLoading,
     error,
@@ -788,6 +868,12 @@ export const useSettingsStore = defineStore('settings', () => {
     getJobCategoryDefault,
     setJobCategoryDefault,
     deleteJobCategoryDefault,
+    
+    // Designation department management
+    addDesignationDepartment,
+    updateDesignationDepartment,
+    deleteDesignationDepartment,
+    getDesignationDepartment,
     
     // Getters
     getBuildingName,

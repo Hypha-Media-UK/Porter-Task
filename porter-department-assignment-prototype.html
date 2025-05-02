@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Porter Department Assignment Prototype</title>
+    <style>
+        :root {
+            --color-primary: #4361ee;
+            --color-primary-light: #e6eaff;
+            --color-success: #2ecc71;
+            --color-warning: #f39c12;
+            --color-danger: #e74c3c;
+            --color-text: #333;
+            --color-text-light: #777;
+            --color-card: #fff;
+            --color-border: #ddd;
+            --color-border-light: #eee;
+            
+            --spacing-xs: 4px;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            
+            --border-radius: 6px;
+            --border-radius-lg: 12px;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: var(--color-text);
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: var(--spacing-md);
+        }
+        
+        header {
+            margin-bottom: var(--spacing-xl);
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        h2 {
+            font-size: 22px;
+            margin-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--color-border-light);
+            padding-bottom: var(--spacing-xs);
+        }
+        
+        h3 {
+            font-size: 18px;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .section {
+            margin-bottom: var(--spacing-xl);
+            background: white;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow);
+            padding: var(--spacing-lg);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--color-border-light);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .tab {
+            padding: var(--spacing-md) var(--spacing-lg);
+            font-weight: 500;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .tab.active {
+            color: var(--color-primary);
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--color-primary);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .porter-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .porter-tag {
+            display: flex;
+            align-items: center;
+            background-color: var(--color-primary-light);
+            border-radius: 20px;
+            padding: var(--spacing-xs) var(--spacing-md);
+            gap: var(--spacing-sm);
+        }
+        
+        .porter-avatar {
+            width: 32px;
+            height: 32px;
+            background-color: var(--color-primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: var(--spacing-xs);
+        }
+        
+        .porter-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .porter-name {
+            font-weight: 500;
+        }
+        
+        .porter-assignment {
+            font-size: 12px;
+            color: var(--color-primary);
+        }
+        
+        .add-button {
+            background-color: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: var(--spacing-sm) var(--spacing-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-weight: 500;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .assignments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-lg);
+        }
+        
+        .department-card {
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+        
+        .department-header {
+            background-color: var(--color-primary-light);
+            color: var(--color-primary);
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .department-header.ae { 
+            background-color: #ffeded; 
+            color: #d63031;
+        }
+        
+        .department-header.ct { 
+            background-color: #e3f9ff; 
+            color: #0984e3;
+        }
+        
+        .department-header.mri { 
+            background-color: #e5f9f0; 
+            color: #00b894;
+        }
+        
+        .department-header.pharmacy { 
+            background-color: #fff8e5; 
+            color: #fdcb6e;
+        }
+        
+        .assignment-list {
+            padding: var(--spacing-md);
+        }
+        
+        .assignment-item {
+            display: flex;
+            margin-bottom: var(--spacing-sm);
+            padding-bottom: var(--spacing-sm);
+            border-bottom: 1px dashed var(--color-border-light);
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .assignment-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .assignment-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .assignment-name {
+            font-weight: 500;
+        }
+        
+        .assignment-time {
+            font-size: 12px;
+            color: var(--color-text-light);
+        }
+        
+        .assignment-actions {
+            display: flex;
+            gap: var(--spacing-xs);
+        }
+        
+        .btn-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--color-text-light);
+        }
+        
+        .btn-icon:hover {
+            background-color: var(--color-border-light);
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal {
+            background-color: white;
+            border-radius: var(--border-radius-lg);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            padding: var(--spacing-md) var(--spacing-lg);
+            background-color: var(--color-primary);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-body {
+            padding: var(--spacing-lg);
+        }
+        
+        .form-group {
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: var(--spacing-sm);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-xs);
+        }
+        
+        .modal-footer {
+            padding: var(--spacing-md) var(--spacing-lg);
+            display: flex;
+            justify-content: flex-end;
+            gap: var(--spacing-md);
+            border-top: 1px solid var(--color-border-light);
+        }
+        
+        .btn {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #f1f2f6;
+            color: var(--color-text);
+        }
+        
+        .timeline-view {
+            margin-top: var(--spacing-xl);
+            overflow-x: auto;
+            padding-bottom: var(--spacing-md);
+        }
+        
+        .timeline {
+            position: relative;
+            min-width: 800px;
+        }
+        
+        .timeline-hours {
+            display: flex;
+            border-bottom: 1px solid var(--color-border-light);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .timeline-hour {
+            width: 100px;
+            text-align: center;
+            font-size: 12px;
+            padding-bottom: var(--spacing-xs);
+            color: var(--color-text-light);
+        }
+        
+        .timeline-porter {
+            display: flex;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .timeline-porter-name {
+            width: 120px;
+            font-weight: 500;
+            padding-right: var(--spacing-md);
+        }
+        
+        .timeline-assignments {
+            position: relative;
+            flex: 1;
+            height: 30px;
+        }
+        
+        .timeline-assignment {
+            position: absolute;
+            height: 24px;
+            border-radius: var(--border-radius);
+            top: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+            font-weight: 500;
+            padding: 0 var(--spacing-xs);
+        }
+        
+        .timeline-ae {
+            background-color: #d63031;
+        }
+        
+        .timeline-ct {
+            background-color: #0984e3;
+        }
+        
+        .timeline-mri {
+            background-color: #00b894;
+        }
+        
+        .timeline-pharmacy {
+            background-color: #fdcb6e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Porter Department Assignment UI Prototype</h1>
+            <p>A visual representation of the proposed UI for assigning porters to departments with time specifications</p>
+        </header>
+        
+        <div class="section">
+            <div class="tabs">
+                <div class="tab">Tasks</div>
+                <div class="tab active">Porters</div>
+            </div>
+
+            <h2>Porters Management</h2>
+            <h3>Assigned Porters</h3>
+            
+            <div class="porter-list">
+                <div class="porter-tag">
+                    <div class="porter-avatar">J</div>
+                    <div class="porter-details">
+                        <span class="porter-name">John Smith</span>
+                        <span class="porter-assignment">Currently: A+E</span>
+                    </div>
+                </div>
+                
+                <div class="porter-tag">
+                    <div class="porter-avatar">S</div>
+                    <div class="porter-details">
+                        <span class="porter-name">Sarah Johnson</span>
+                        <span class="porter-assignment">Currently: MRI</span>
+                    </div>
+                </div>
+                
+                <div class="porter-tag">
+                    <div class="porter-avatar">M</div>
+                    <div class="porter-details">
+                        <span class="porter-name">Mike Davies</span>
+                        <span class="porter-assignment">Currently: Pharmacy</span>
+                    </div>
+                </div>
+                
+                <div class="porter-tag">
+                    <div class="porter-avatar">L</div>
+                    <div class="porter-details">
+                        <span class="porter-name">Lucy Wilson</span>
+                        <span class="porter-assignment">Unassigned</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="add-button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Porter
+            </button>
+            
+            <h3>Department Assignments</h3>
+            
+            <button class="add-button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Assign Porter to Department
+            </button>
+            
+            <div class="assignments-grid">
+                <div class="department-card">
+                    <div class="department-header ae">
+                        <span>A+E</span>
+                        <span>2 Porters</span>
+                    </div>
+                    <div class="assignment-list">
+                        <div class="assignment-item">
+                            <div class="assignment-info">
+                                <div class="assignment-name">John Smith</div>
+                                <div class="assignment-time">9:00 - 12:00</div>
+                            </div>
+                            <div class="assignment-actions">
+                                <button class="btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </button>
+                                <button class="btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="assignment-item">
+                            <div class="assignment-info">
+                                <div class="assignment-name">Lucy Wilson</div>
+                                <div class="assignment-time">14:00 - 18:00</div>
+                            </div>
+                            <div class="assignment-actions">
+                                <button class="btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </button>
+                                <button class="btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="department-card">
+                    <div class="department-header ct">
+                        <span>CT</span>
+                        <span>1 Porter</span>
+                    </div>
+                    <div class="assignment-list">
+                        <div class="assignment-item">
+                            <div class="assignment-info">
+                                <div class="assignment-name">John Smith</div>
+                                <div class="assignment-time">13:00 - 16:00</div>
+                            </div>
+                            <div class="assignment-actions">
+                                <button class="btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </button>
+                                <button class="btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="department-card">
+                    <div class="department-header mri">
+                        <span>MRI</span>
+                        <span>1 Porter</span>
+                    </div>
+                    <div class="assignment-list">
+                        <div class="assignment-item">
+                            <div class="assignment-info">
+                                <div class="assignment-name">Sarah Johnson</div>
+                                <div class="assignment-time">10:00 - 14:00</div>
+                            </div>
+                            <div class="assignment-actions">
+                                <button class="btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </button>
+                                <button class="btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="department-card">
+                    <div class="department-header pharmacy">
+                        <span>Pharmacy</span>
+                        <span>1 Porter</span>
+                    </div>
+                    <div class="assignment-list">
+                        <div class="assignment-item">
+                            <div class="assignment-info">
+                                <div class="assignment-name">Mike Davies</div>
+                                <div class="assignment-time">10:30 - 17:00</div>
+                            </div>
+                            <div class="assignment-actions">
+                                <button class="btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </button>
+                                <button class="btn-icon">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <h3>Timeline View</h3>
+            <div class="timeline-view">
+                <div class="timeline">
+                    <div class="timeline-hours">
+                        <div class="timeline-hour">9:00</div>
+                        <div class="timeline-hour">10:00</div>
+                        <div class="timeline-hour">11:00</div>
+                        <div class="timeline-hour">12:00</div>
+                        <div class="timeline-hour">13:00</div>
+                        <div class="timeline-hour">14:00</div>
+                        <div class="timeline-hour">15:00</div>
+                        <div class="timeline-hour">16:00</div>
+                        <div class="timeline-hour">17:00</div>
+                        <div class="timeline-hour">18:00</div>
+                    </div>
+                    
+                    <div class="timeline-porter">
+                        <div class="timeline-porter-name">John Smith</div>
+                        <div class="timeline-assignments">
+                            <div class="timeline-assignment timeline-ae" style="left: 0px; width: 300px;">A+E</div>
+                            <div class="timeline-assignment timeline-ct" style="left: 400px; width: 300px;">CT</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-porter">
+                        <div class="timeline-porter-name">Sarah Johnson</div>
+                        <div class="timeline-assignments">
+                            <div class="timeline-assignment timeline-mri" style="left: 100px; width: 400px;">MRI</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-porter">
+                        <div class="timeline-porter-name">Mike Davies</div>
+                        <div class="timeline-assignments">
+                            <div class="timeline-assignment timeline-pharmacy" style="left: 150px; width: 650px;">Pharmacy</div>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-porter">
+                        <div class="timeline-porter-name">Lucy Wilson</div>
+                        <div class="timeline-assignments">
+                            <div class="timeline-assignment timeline-ae" style="left: 500px; width: 400px;">A+E</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assignment Modal -->
+        <div class="modal-overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>Assign Porter to Department</h3>
+                    <button class="btn-icon" style="color: white">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Porter</label>
+                        <select class="form-control">
+                            <option>Select a porter</option>
+                            <option>John Smith</option>
+                            <option>Sarah Johnson</option>
+                            <option>Mike Davies</option>
+                            <option>Lucy Wilson</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Department</label>
+                        <select class="form-control">
+                            <option>Select a department</option>
+                            <option>A+E</option>
+                            <option>CT</option>
+                            <option>MRI</option>
+                            <option>AMU</option>
+                            <option>Pharmacy</option>
+                            <option>Meals</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Start Time</label>
+                        <input type="time" class="form-control" value="09:00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">End Time (optional)</label>
+                        <input type="time" class="form-control" value="12:00">
+                        <small style="color: var(--color-text-light)">Leave blank for "until end of shift"</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Notes (optional)</label>
+                        <textarea class="form-control" rows="3" placeholder="Add any additional information here..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button class="btn btn-secondary">Cancel</button>
+                    <button class="btn btn-primary">Assign</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

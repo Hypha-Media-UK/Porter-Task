@@ -137,7 +137,7 @@
       
       <!-- Porters Tab Content -->
       <div v-else-if="activeTab === 'porters'" class="tab-content-container">
-        <div class="dashboard-card porters-card">
+        <div class="dashboard-card porters-card full-width">
           <div class="card-header">
             <div class="title-area">
               <h2>Porters Management</h2>
@@ -180,19 +180,31 @@
             </div>
           </div>
           
+          <h3 class="section-subheading">Assigned Porters</h3>
           <div class="card-content">
-            <div v-if="assignedPorters.length === 0" class="empty-state">
+            <div v-if="assignedPorters.length ===
+            0" class="empty-state">
               <p>No porters assigned to this shift.</p>
               <button v-if="!showPorterManager" class="btn-outline" @click="showPorterManager = true">Assign Porters</button>
             </div>
             
             <div v-else class="porter-list">
-              <div v-for="porter in assignedPorters" :key="porter" class="porter-item">
+              <div 
+                v-for="porter in assignedPorters" 
+                :key="porter" 
+                class="porter-tag"
+                @click="openAssignPorter(porter)"
+              >
                 <div class="porter-avatar">{{ porter.charAt(0) }}</div>
-                <span class="porter-name">{{ porter }}</span>
+                <div class="porter-details">
+                  <span class="porter-name">{{ porter }}</span>
+                  <span class="porter-assignment" v-if="getCurrentAssignment(porter)">
+                    Currently: {{ getCurrentAssignment(porter) }}
+                  </span>
+                </div>
                 <button 
                   class="btn-icon remove-porter" 
-                  @click="handleRemovePorterFromShift(porter)" 
+                  @click.stop="handleRemovePorterFromShift(porter)" 
                   title="Remove porter"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -200,6 +212,115 @@
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
                 </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Department Assignments Section -->
+          <div v-if="assignedPorters.length > 0" class="department-assignments">
+            <h3 class="section-subheading">Department Assignments</h3>
+            <div class="departments-grid">
+              <div 
+                v-for="department in departmentsWithAssignments" 
+                :key="department.id"
+                class="department-card"
+              >
+                <div 
+                  class="department-header"
+                  :style="{ backgroundColor: department.color ? `${department.color}22` : '#f0f0f0', 
+                            color: department.color || '#666' }"
+                >
+                  <span class="department-name">{{ department.name }}</span>
+                  <span class="department-count">{{ department.assignments.length }} Porter{{ department.assignments.length !== 1 ? 's' : '' }}</span>
+                </div>
+                
+                <div class="department-content">
+                  <div v-if="department.assignments.length === 0" class="empty-assignments">
+                    <p>No porters assigned to this department</p>
+                  </div>
+                  
+                  <div v-else class="assignment-list">
+                    <div 
+                      v-for="assignment in department.assignments" 
+                      :key="assignment.id"
+                      class="assignment-item"
+                    >
+                      <div class="assignment-info">
+                        <div class="assignment-porter">{{ assignment.porterId }}</div>
+                        <div class="assignment-time">
+                          {{ formatTime(new Date(assignment.startTime)) }}
+                          {{ assignment.endTime ? ` - ${formatTime(new Date(assignment.endTime))}` : '' }}
+                          {{ !assignment.endTime ? '(until end of shift)' : '' }}
+                        </div>
+                        <div v-if="assignment.notes" class="assignment-notes">
+                          {{ assignment.notes }}
+                        </div>
+                      </div>
+                      <div class="assignment-actions">
+                        <button class="btn-icon" @click="editAssignment(assignment)" title="Edit assignment">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                          </svg>
+                        </button>
+                        <button class="btn-icon" @click="deleteAssignment(assignment)" title="Delete assignment">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Timeline View Section -->
+            <div v-if="porterAssignments.length > 0" class="timeline-section">
+              <h3 class="section-subheading">Timeline View</h3>
+              <div class="timeline-container">
+                <div class="timeline">
+                  <div class="timeline-hours">
+                    <div 
+                      v-for="hour in timelineHours" 
+                      :key="hour.label" 
+                      class="timeline-hour"
+                      :style="{ width: `${100 / timelineHours.length}%` }"
+                    >
+                      {{ hour.label }}
+                    </div>
+                  </div>
+                  
+                  <div 
+                    v-for="porter in portersWithAssignments" 
+                    :key="porter.id" 
+                    class="timeline-porter"
+                  >
+                    <div class="timeline-porter-name">{{ porter.id }}</div>
+                    <div class="timeline-assignments">
+                      <div 
+                        v-for="assignment in porter.assignments" 
+                        :key="assignment.id"
+                        class="timeline-assignment"
+                        :style="{ 
+                          left: `${calculateTimePosition(assignment.startTime)}%`,
+                          width: `${calculateTimeWidth(assignment.startTime, assignment.endTime)}%`,
+                          backgroundColor: getDepartmentColor(assignment.departmentId)
+                        }"
+                        @click="editAssignment(assignment)"
+                      >
+                        {{ getDepartmentName(assignment.departmentId) }}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Current time indicator -->
+                  <div 
+                    class="current-time-marker"
+                    :style="{ left: `${calculateCurrentTimePosition()}%` }"
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
@@ -243,6 +364,39 @@
         </div>
       </div>
     </div>
+    
+    <!-- Assignment Modal -->
+    <PorterAssignmentModal
+      v-if="showAssignmentModal"
+      :editing="!!editingAssignment"
+      :assignment="editingAssignment"
+      :porters="assignedPorters"
+      @save="saveAssignment"
+      @cancel="() => { showAssignmentModal = false; editingAssignment = undefined; }"
+    />
+    
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteConfirm" class="modal-backdrop" @click.self="showDeleteConfirm = false">
+      <div class="modal-content">
+        <div class="modal-handle"></div>
+        <div class="modal-header">
+          <h3>Delete Assignment</h3>
+        </div>
+        <div class="modal-body">
+          <p>
+            Are you sure you want to remove 
+            <strong>{{ deletingAssignment?.porterId }}</strong> 
+            from the 
+            <strong>{{ getDepartmentName(deletingAssignment?.departmentId || '') }}</strong> 
+            department?
+          </p>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-secondary" @click="showDeleteConfirm = false">Cancel</button>
+          <button class="btn-danger" @click="confirmDeleteAssignment">Delete</button>
+        </div>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -251,8 +405,10 @@ import { ref, computed, inject, onMounted } from 'vue'
 import { useShiftStore } from '../stores/shift'
 import { useSettingsStore } from '../stores/settings'
 import { formatDate, formatTime } from '../utils/date'
-import type { RouteParams } from '../types'
+import type { RouteParams, PorterAssignment } from '../types'
 import TaskCard from '../components/TaskCard.vue'
+import PorterAssignmentManager from '../components/porter/PorterAssignmentManager.vue'
+import PorterAssignmentModal from '../components/porter/PorterAssignmentModal.vue'
 
 // Router injection
 const navigate = inject<(route: string, params?: RouteParams) => void>('navigate')
@@ -262,6 +418,7 @@ const showEndShiftConfirm = ref(false)
 const showPorterManager = ref(false)
 const selectedPorter = ref('')
 const activeTab = ref('tasks') // Default tab
+const refreshKey = ref(0) // Key for forcing component refresh
 
 // Stores
 const shiftStore = useShiftStore()
@@ -315,6 +472,246 @@ const endCurrentShift = () => {
   if (navigate) navigate('home')
 }
 
+// Get the current department assignment for a porter
+const getCurrentAssignment = (porterId: string): string | null => {
+  if (!currentShift || !currentShift.porterAssignments) return null;
+  
+  const now = new Date().toISOString();
+  
+  // Find current active assignment for this porter
+  const currentAssignment = currentShift.porterAssignments.find(assignment => {
+    return assignment.porterId === porterId && 
+           assignment.startTime <= now && 
+           (!assignment.endTime || assignment.endTime > now);
+  });
+  
+  if (!currentAssignment) return null;
+  
+  // Get department name from the settings store
+  const department = settingsStore.designationDepartments.find(
+    dept => dept.id === currentAssignment.departmentId
+  );
+  
+  return department ? department.name : null;
+}
+
+// Porter Assignment Management
+const porterAssignments = computed(() => {
+  if (!currentShift || !currentShift.porterAssignments) return [];
+  return currentShift.porterAssignments;
+});
+
+// Department Assignment Modal
+const showAssignmentModal = ref(false);
+const editingAssignment = ref<PorterAssignment | undefined>(undefined);
+const deletingAssignment = ref<PorterAssignment | undefined>(undefined);
+const showDeleteConfirm = ref(false);
+
+// Departments with Assignments
+const departmentsWithAssignments = computed(() => {
+  const allDepartments = settingsStore.designationDepartments;
+  
+  return allDepartments.map(dept => {
+    // Find all assignments for this department
+    const deptAssignments = porterAssignments.value.filter(a => a.departmentId === dept.id);
+    
+    return {
+      ...dept,
+      assignments: deptAssignments
+    };
+  }).sort((a, b) => {
+    // Sort by assignment count (descending) then by name
+    if (b.assignments.length !== a.assignments.length) {
+      return b.assignments.length - a.assignments.length;
+    }
+    return a.name.localeCompare(b.name);
+  });
+});
+
+// Porters with their Assignments
+const portersWithAssignments = computed(() => {
+  // Group assignments by porter
+  const porters = assignedPorters.value.map(porterId => {
+    return {
+      id: porterId,
+      assignments: porterAssignments.value.filter(a => a.porterId === porterId)
+    };
+  });
+  
+  // Only include porters with assignments
+  return porters.filter(p => p.assignments.length > 0);
+});
+
+// Timeline data
+const timelineHours = computed(() => {
+  // Create an array of hour labels for the timeline (usually 24 hours)
+  // Adjusted to only show relevant hours based on shift times
+  const hours = [];
+  const startHour = 6; // 6 AM
+  const endHour = 23; // 11 PM
+  
+  for (let i = startHour; i <= endHour; i++) {
+    hours.push({
+      hour: i,
+      label: `${i % 12 === 0 ? 12 : i % 12}${i < 12 ? 'am' : 'pm'}`
+    });
+  }
+  
+  // If night shift, also add hours from midnight to 6 AM
+  for (let i = 0; i < startHour; i++) {
+    hours.push({
+      hour: i,
+      label: `${i % 12 === 0 ? 12 : i % 12}${i < 12 ? 'am' : 'pm'}`
+    });
+  }
+  
+  return hours;
+});
+
+// Methods for timeline positioning
+const calculateTimePosition = (timeString: string): number => {
+  const date = new Date(timeString);
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  
+  // Calculate position as percentage of 24 hours
+  const totalMinutes = hours * 60 + minutes;
+  const dayMinutes = 24 * 60;
+  return (totalMinutes / dayMinutes) * 100;
+};
+
+const calculateTimeWidth = (startTimeString: string, endTimeString?: string): number => {
+  const startDate = new Date(startTimeString);
+  let endDate;
+  
+  if (endTimeString) {
+    endDate = new Date(endTimeString);
+  } else {
+    // If no end time, use end of shift or add 2 hours to start time
+    const shift = currentShift;
+    if (shift && shift.endTime) {
+      endDate = new Date(shift.endTime);
+    } else {
+      endDate = new Date(startDate);
+      endDate.setHours(endDate.getHours() + 2); // Default 2 hour duration
+    }
+  }
+  
+  // Calculate minutes between start and end
+  const startMinutes = startDate.getHours() * 60 + startDate.getMinutes();
+  const endMinutes = endDate.getHours() * 60 + endDate.getMinutes();
+  
+  // Handle overnight assignments
+  let durationMinutes = endMinutes - startMinutes;
+  if (durationMinutes < 0) {
+    durationMinutes += 24 * 60; // Add a full day if overnight
+  }
+  
+  // Calculate width as percentage of 24 hours
+  const dayMinutes = 24 * 60;
+  return (durationMinutes / dayMinutes) * 100;
+};
+
+const calculateCurrentTimePosition = (): number => {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  
+  // Calculate position as percentage of 24 hours
+  const totalMinutes = hours * 60 + minutes;
+  const dayMinutes = 24 * 60;
+  return (totalMinutes / dayMinutes) * 100;
+};
+
+// Helper methods for department data
+const getDepartmentName = (departmentId: string): string => {
+  const department = settingsStore.designationDepartments.find(d => d.id === departmentId);
+  return department ? department.name : 'Unknown';
+};
+
+const getDepartmentColor = (departmentId: string): string => {
+  const department = settingsStore.designationDepartments.find(d => d.id === departmentId);
+  return department && department.color ? department.color : '#cccccc';
+};
+
+// Assignment Modal
+const openAssignPorter = (porterId: string) => {
+  // Open assignment modal for the selected porter
+  showAssignmentModal.value = true;
+  
+  // Pre-select this porter in the form
+  if (!editingAssignment.value) {
+    editingAssignment.value = {
+      id: '',
+      porterId: porterId,
+      departmentId: '',
+      startTime: new Date().toISOString()
+    };
+  }
+};
+
+const editAssignment = (assignment: PorterAssignment) => {
+  editingAssignment.value = assignment;
+  showAssignmentModal.value = true;
+};
+
+const deleteAssignment = (assignment: PorterAssignment) => {
+  deletingAssignment.value = assignment;
+  showDeleteConfirm.value = true;
+};
+
+const saveAssignment = (assignmentData: {
+  id?: string;
+  porterId: string;
+  departmentId: string;
+  startTime: string;
+  endTime?: string;
+  notes?: string;
+}) => {
+  try {
+    if (assignmentData.id) {
+      // Update existing assignment
+      shiftStore.updatePorterAssignment(assignmentData.id, {
+        departmentId: assignmentData.departmentId,
+        startTime: assignmentData.startTime,
+        endTime: assignmentData.endTime,
+        notes: assignmentData.notes
+      });
+    } else {
+      // Create new assignment
+      shiftStore.addPorterAssignment({
+        porterId: assignmentData.porterId,
+        departmentId: assignmentData.departmentId,
+        startTime: assignmentData.startTime,
+        endTime: assignmentData.endTime,
+        notes: assignmentData.notes
+      });
+    }
+    
+    // Close modal and reset
+    showAssignmentModal.value = false;
+    editingAssignment.value = undefined;
+    refreshKey.value++;
+  } catch (error) {
+    console.error('Error saving assignment:', error);
+    alert('Failed to save assignment: ' + (error instanceof Error ? error.message : String(error)));
+  }
+};
+
+const confirmDeleteAssignment = () => {
+  if (deletingAssignment.value) {
+    try {
+      shiftStore.removePorterAssignment(deletingAssignment.value.id);
+      showDeleteConfirm.value = false;
+      deletingAssignment.value = undefined;
+      refreshKey.value++;
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
+      alert('Failed to delete assignment: ' + (error instanceof Error ? error.message : String(error)));
+    }
+  }
+};
+
 // Porter management methods
 const handleAddPorterToShift = () => {
   if (!selectedPorter.value) return
@@ -325,6 +722,9 @@ const handleAddPorterToShift = () => {
     
     // Reset selection after adding
     selectedPorter.value = ''
+    
+    // Increment refreshKey to force porter assignment component to update
+    refreshKey.value++
   } catch (error) {
     console.error('Error adding porter:', error)
     alert('Failed to add porter: ' + (error instanceof Error ? error.message : String(error)))
@@ -335,6 +735,9 @@ const handleRemovePorterFromShift = (porter: string) => {
   try {
     // Remove the porter from the current shift
     removePorterFromShift(porter)
+    
+    // Increment refreshKey to force porter assignment component to update
+    refreshKey.value++
   } catch (error) {
     console.error('Error removing porter:', error)
     alert('Failed to remove porter: ' + (error instanceof Error ? error.message : String(error)))
@@ -567,16 +970,26 @@ h3 {
 
 .porter-list {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
 }
 
-.porter-item {
+.porter-tag {
   display: flex;
   align-items: center;
   padding: var(--spacing-sm);
   border-radius: var(--border-radius);
   background-color: var(--color-card-alt, #f9f9f9);
+  border: 1px solid var(--color-border-light);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.porter-tag:hover {
+  background-color: var(--color-card);
+  border-color: var(--color-primary-light);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .porter-avatar {
@@ -590,11 +1003,194 @@ h3 {
   justify-content: center;
   font-weight: var(--font-weight-bold);
   margin-right: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.porter-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .porter-name {
-  flex: 1;
   font-weight: var(--font-weight-medium);
+}
+
+.porter-assignment {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+  margin-top: 2px;
+}
+
+/* Department Assignment styles */
+.department-assignments {
+  margin-top: var(--spacing-lg);
+}
+
+.section-subheading {
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-xs);
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+}
+
+.departments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+  padding: 0 var(--spacing-md) var(--spacing-md);
+}
+
+.department-card {
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border-light);
+  overflow: hidden;
+}
+
+.department-header {
+  padding: var(--spacing-sm) var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: var(--font-weight-medium);
+}
+
+.department-content {
+  padding: var(--spacing-sm);
+}
+
+.empty-assignments {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--color-text-light);
+  font-size: var(--font-size-sm);
+}
+
+.assignment-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.assignment-item {
+  padding: var(--spacing-sm);
+  background-color: var(--color-card-alt, #f9f9f9);
+  border-radius: var(--border-radius);
+  display: flex;
+  justify-content: space-between;
+}
+
+.assignment-info {
+  flex: 1;
+}
+
+.assignment-porter {
+  font-weight: var(--font-weight-medium);
+}
+
+.assignment-time, .assignment-notes {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+  margin-top: var(--spacing-xs);
+}
+
+.assignment-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+/* Timeline styles */
+.timeline-section {
+  margin-top: var(--spacing-lg);
+  padding: 0 var(--spacing-md) var(--spacing-md);
+}
+
+.timeline-container {
+  overflow-x: auto;
+  margin-bottom: var(--spacing-xl);
+}
+
+.timeline {
+  position: relative;
+  min-width: 800px;
+  background-color: white;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border-light);
+  padding: var(--spacing-md);
+}
+
+.timeline-hours {
+  display: flex;
+  border-bottom: 1px solid var(--color-border-light);
+  padding-bottom: var(--spacing-xs);
+}
+
+.timeline-hour {
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+}
+
+.timeline-porter {
+  display: flex;
+  margin: var(--spacing-md) 0;
+}
+
+.timeline-porter-name {
+  width: 100px;
+  font-weight: var(--font-weight-medium);
+  padding-right: var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.timeline-assignments {
+  position: relative;
+  flex: 1;
+  height: 28px;
+}
+
+.timeline-assignment {
+  position: absolute;
+  height: 28px;
+  border-radius: var(--border-radius);
+  padding: 0 var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.timeline-assignment:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.current-time-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--color-danger);
+  z-index: 1;
+}
+
+.current-time-marker::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -4px;
+  width: 10px;
+  height: 10px;
+  background-color: var(--color-danger);
+  border-radius: 50%;
 }
 
 .btn-icon {

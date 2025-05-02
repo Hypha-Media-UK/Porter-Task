@@ -174,6 +174,13 @@
           </div>
         </div>
         
+        <!-- Department Assignment Section -->
+        <div v-if="assignedPorters && assignedPorters.length > 0" class="department-assignments-section">
+          <h3>Department Assignments</h3>
+          <p class="section-description">Assign porters to departments during the shift</p>
+          <PorterAssignmentManager :key="refreshKey"/>
+        </div>
+        
         <div class="stats-row">
           <div class="stat-item">
             <div class="stat-value">{{ shift.tasks.length }}</div>
@@ -272,6 +279,7 @@ import { formatDate, formatTime, formatDuration } from '../utils/date'
 import type { RouteParams, Shift, Task } from '../types'
 import TaskCard from '../components/TaskCard.vue'
 import TabNavigation from '../components/TabNavigation.vue'
+import PorterAssignmentManager from '../components/porter/PorterAssignmentManager.vue'
 
 // Props
 const props = defineProps<{
@@ -298,6 +306,7 @@ const showPorterManager = ref(false)
 // State
 const shift = ref<Shift | null>(null)
 const activeTab = ref<'all' | 'completed' | 'pending'>('all')
+const refreshKey = ref(0) // Key for forcing component refresh
 
 // Load shift data
 const loadShift = async () => {
@@ -431,6 +440,12 @@ const handleAddPorterToShift = async () => {
     
     // Refresh the shift data
     await refreshShift()
+    
+    // Increment refreshKey to force component refresh
+    refreshKey.value++
+    
+    // Increment refreshKey to force component refresh
+    refreshKey.value++
   } catch (error) {
     console.error('Error adding porter:', error)
     alert('Failed to add porter: ' + (error instanceof Error ? error.message : String(error)))
@@ -455,6 +470,9 @@ const handleRemovePorterFromShift = async (porter: string) => {
     
     // Refresh the shift data
     await refreshShift()
+    
+    // Increment refreshKey to force component refresh
+    refreshKey.value++
   } catch (error) {
     console.error('Error removing porter:', error)
     alert('Failed to remove porter: ' + (error instanceof Error ? error.message : String(error)))
@@ -577,7 +595,7 @@ watch(() => props.shiftId, loadShift)
 }
 
 /* Porter Management Styles */
-.porters-section {
+.porters-section, .department-assignments-section {
   background-color: var(--color-card);
   border-radius: var(--border-radius);
   padding: var(--spacing-md);

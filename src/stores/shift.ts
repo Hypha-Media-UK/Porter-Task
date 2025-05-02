@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { nanoid } from 'nanoid'
-import type { Shift, Task, ShiftType, TaskStatus, Location } from '@/types'
+import type { Shift, Task, ShiftType, TaskStatus, Location, PorterAssignment } from '@/types'
 
 /**
  * Store for managing shifts and tasks
@@ -28,6 +28,25 @@ export const useShiftStore = defineStore('shift', () => {
   const completedTasks = computed(() => {
     if (!currentShift.value) return []
     return currentShift.value.tasks.filter(task => task.status === 'Completed')
+  })
+  
+  // Porter assignments computed properties
+  const porterAssignments = computed(() => {
+    if (!currentShift.value || !currentShift.value.porterAssignments) return []
+    return currentShift.value.porterAssignments
+  })
+  
+  const currentPorterAssignments = computed(() => {
+    if (!currentShift.value || !currentShift.value.porterAssignments) return []
+    
+    const now = new Date().toISOString()
+    
+    // Return assignments that are currently active (started and not ended, or ended in future)
+    return currentShift.value.porterAssignments.filter(assignment => {
+      const hasStarted = assignment.startTime <= now
+      const hasNotEnded = !assignment.endTime || assignment.endTime > now
+      return hasStarted && hasNotEnded
+    })
   })
   
   /**
@@ -673,6 +692,146 @@ export const useShiftStore = defineStore('shift', () => {
     return shift
   }
 
+  /**
+   * Add a department assignment for a porter
+   */
+  function addPorterAssignment(assignment: {
+    porterId: string;
+    departmentId: string;
+    startTime?: string;
+    endTime?: string;
+    notes?: string;
+  }): PorterAssignment {
+    if (!currentShift.value) {
+      throw new Error('Cannot create assignment without an active shift')
+    }
+    
+    // Ensure the porter is assigned to this shift
+    if (!currentShift.value.assignedPorters || !currentShift.value.assignedPorters.includes(assignment.porterId)) {
+      throw new Error(`Porter ${assignment.porterId} is not assigned to this shift`)
+    }
+    
+    const now = new Date()
+    
+    const newAssignment: PorterAssignment = {
+      id: nanoid(),
+      porterId: assignment.porterId,
+      departmentId: assignment.departmentId,
+      startTime: assignment.startTime || now.toISOString(),
+      endTime: assignment.endTime,
+      notes: assignment.notes
+    }
+    
+    // Initialize porterAssignments array if it doesn't exist
+    if (!currentShift.value.porterAssignments) {
+      currentShift.value.porterAssignments = []
+    }
+    
+    // Add assignment to shift
+    currentShift.value.porterAssignments.push(newAssignment)
+    
+    // Save to localStorage
+    localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(currentShift.value))
+    
+    console.log('Porter assignment created:', newAssignment)
+    
+    return newAssignment
+  }
+  
+  /**
+   * Update an existing porter assignment
+   */
+  function updatePorterAssignment(assignmentId: string, updates: {
+    departmentId?: string;
+    startTime?: string;
+    endTime?: string | null;
+    notes?: string;
+  }): PorterAssignment {
+    if (!currentShift.value || !currentShift.value.porterAssignments) {
+      throw new Error('No active shift or no assignments')
+    }
+    
+    const assignmentIndex = currentShift.value.porterAssignments.findIndex(a => a.id === assignmentId)
+    
+    if (assignmentIndex === -1) {
+      throw new Error(`Assignment with ID ${assignmentId} not found`)
+    }
+    
+    // Get the existing assignment
+    const assignment = { ...currentShift.value.porterAssignments[assignmentIndex] }
+    
+    // Update fields
+    if (updates.departmentId !== undefined) assignment.departmentId = updates.departmentId
+    if (updates.startTime !== undefined) assignment.startTime = updates.startTime
+    if (updates.notes !== undefined) assignment.notes = updates.notes
+    
+    // Handle endTime specially to resolve the TypeScript error
+    if (updates.endTime === null) {
+      // If endTime is explicitly set to null, remove it
+      delete assignment.endTime
+    } else if (updates.endTime !== undefined) {
+      // Otherwise, set it if not undefined
+      assignment.endTime = updates.endTime
+    }
+    
+    // Update assignment in the shift
+    currentShift.value.porterAssignments[assignmentIndex] = assignment
+    
+    // Save to localStorage
+    localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(currentShift.value))
+    
+    console.log('Porter assignment updated:', assignment)
+    
+    return assignment
+  }
+  
+  /**
+   * Remove a porter assignment
+   */
+  function removePorterAssignment(assignmentId: string): boolean {
+    if (!currentShift.value || !currentShift.value.porterAssignments) {
+      throw new Error('No active shift or no assignments')
+    }
+    
+    const assignmentIndex = currentShift.value.porterAssignments.findIndex(a => a.id === assignmentId)
+    
+    if (assignmentIndex === -1) {
+      throw new Error(`Assignment with ID ${assignmentId} not found`)
+    }
+    
+    // Remove assignment from shift
+    currentShift.value.porterAssignments.splice(assignmentIndex, 1)
+    
+    // Save to localStorage
+    localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(currentShift.value))
+    
+    console.log(`Porter assignment ${assignmentId} removed`)
+    
+    return true
+  }
+  
+  /**
+   * Get porter assignments for a specific porter
+   */
+  function getPorterAssignments(porterId: string): PorterAssignment[] {
+    if (!currentShift.value || !currentShift.value.porterAssignments) {
+      return []
+    }
+    
+    return currentShift.value.porterAssignments.filter(a => a.porterId === porterId)
+  }
+  
+  /**
+   * Get porter assignments for a department
+   */
+  function getDepartmentAssignments(departmentId: string): PorterAssignment[] {
+    if (!currentShift.value || !currentShift.value.porterAssignments) {
+      return []
+    }
+    
+    return currentShift.value.porterAssignments.filter(a => a.departmentId === departmentId)
+  }
+  
   return {
     // State
     currentShift,
@@ -684,6 +843,8 @@ export const useShiftStore = defineStore('shift', () => {
     isShiftActive,
     pendingTasks,
     completedTasks,
+    porterAssignments,
+    currentPorterAssignments,
     
     // Actions
     loadShiftData,
@@ -700,6 +861,13 @@ export const useShiftStore = defineStore('shift', () => {
     deleteShift,
     reopenShift,
     addPorterToShift,
-    removePorterFromShift
+    removePorterFromShift,
+    
+    // Porter assignment management
+    addPorterAssignment,
+    updatePorterAssignment,
+    removePorterAssignment,
+    getPorterAssignments,
+    getDepartmentAssignments
   }
 })

@@ -44,6 +44,7 @@ export interface SettingsData {
   jobCategories?: JobCategoriesMap;
   jobCategoryDefaults?: JobCategoryDefault[];
   shifts?: ShiftSchedule;
+  designationDepartments?: DesignationDepartment[];
   [key: string]: any;
 }
 
@@ -91,6 +92,24 @@ export interface Shift {
   endTime?: string; // ISO string, optional if shift is still ongoing
   tasks: Task[];
   assignedPorters?: Porter[]; // Porters assigned to this shift
+  porterAssignments?: PorterAssignment[];  // Department assignments for porters
+}
+
+// Designation departments (different from location departments)
+export interface DesignationDepartment {
+  id: string;
+  name: string;
+  color?: string; // Color code for UI display
+}
+
+// Time-based porter assignment to a department
+export interface PorterAssignment {
+  id: string;
+  porterId: string;  // Reference to porter's name
+  departmentId: string;  // Reference to designation department
+  startTime: string;  // ISO string
+  endTime?: string;  // ISO string, optional (null means "until end of shift")
+  notes?: string;  // Optional notes about the assignment
 }
 
 // Route parameters

@@ -2,6 +2,9 @@
   <section class="settings-section">
     <h2>Application Settings</h2>
     
+    <!-- Department Designations section -->
+    <DesignationDepartmentManager />
+    
     <div class="setting-group">
       <div class="setting-row">
         <div class="setting-label">
@@ -95,6 +98,7 @@
 <script setup lang="ts">
 import { reactive, onMounted, watch } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
+import DesignationDepartmentManager from './DesignationDepartmentManager.vue'
 
 // Get the settings store
 const settingsStore = useSettingsStore()
