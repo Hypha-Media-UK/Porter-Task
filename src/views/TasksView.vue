@@ -1,57 +1,78 @@
 <template>
   <main class="tasks-view">
-    <header class="top-header">
+    <header class="page-header">
       <h1>Shift Management</h1>
     </header>
     
-    <section v-if="currentShift" class="task-summary-card">
-      <div class="summary-header">
-        <div class="shift-info">
-          <div class="shift-badge" :class="currentShift.type.toLowerCase()">
-            {{ currentShift.type }} Shift
+    <section v-if="currentShift" class="shift-dashboard">
+      <!-- Shift Overview Card -->
+      <div class="dashboard-card shift-overview">
+        <div class="card-header">
+          <div class="title-area">
+            <h2>Current Shift</h2>
+            <div class="shift-badge" :class="currentShift.type.toLowerCase()">
+              {{ currentShift.type }}
+            </div>
           </div>
-          <div class="shift-date">{{ formatDate(new Date(currentShift.date)) }}</div>
+          <button class="btn-danger" @click="confirmEndShift">
+            End Shift
+          </button>
         </div>
         
-        <button class="btn-outline btn-small btn-danger" @click="confirmEndShift">
-          End Shift
-        </button>
+        <div class="card-content">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Date</span>
+              <span class="info-value">{{ formatDate(new Date(currentShift.date)) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Start Time</span>
+              <span class="info-value">{{ formatTime(new Date(currentShift.startTime)) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Supervisor</span>
+              <span class="info-value">{{ currentShift.supervisor }}</span>
+            </div>
+          </div>
+        </div>
       </div>
-
-      <!-- Porter Management Section -->
-      <div class="porters-section">
-        <div class="section-title">
-          <h3>Assigned Porters</h3>
+      
+      <!-- Porter Management Card -->
+      <div class="dashboard-card porters-card">
+        <div class="card-header">
+          <div class="title-area">
+            <h2>Porters</h2>
+          </div>
           <button 
             v-if="!showPorterManager" 
-            class="btn-small btn-outline"
+            class="btn-primary"
             @click="showPorterManager = true"
           >
             Manage Porters
           </button>
           <button 
             v-else 
-            class="btn-small btn-outline"
+            class="btn-secondary"
             @click="showPorterManager = false"
           >
             Done
           </button>
         </div>
-
-        <div v-if="showPorterManager" class="porter-management">
+        
+        <div v-if="showPorterManager" class="porter-manager">
           <div class="porter-selection">
             <select 
               v-model="selectedPorter" 
               class="form-control"
               :disabled="!availablePorters.length"
             >
-              <option value="" disabled>Select porter</option>
+              <option value="" disabled>Select porter to add</option>
               <option v-for="porter in availablePorters" :key="porter" :value="porter">
                 {{ porter }}
               </option>
             </select>
             <button 
-              class="btn-primary btn-small" 
+              class="btn-primary" 
               @click="handleAddPorterToShift"
               :disabled="!selectedPorter"
             >
@@ -59,79 +80,116 @@
             </button>
           </div>
         </div>
-
-        <div v-if="assignedPorters.length === 0" class="empty-porters">
-          <p>No porters assigned to this shift.</p>
-        </div>
         
-        <div v-else class="assigned-porters">
-          <div class="porter-tags">
-            <div v-for="porter in assignedPorters" :key="porter" class="porter-tag">
+        <div class="card-content">
+          <div v-if="assignedPorters.length === 0" class="empty-state">
+            <p>No porters assigned to this shift.</p>
+            <button v-if="!showPorterManager" class="btn-outline" @click="showPorterManager = true">Assign Porters</button>
+          </div>
+          
+          <div v-else class="porter-list">
+            <div v-for="porter in assignedPorters" :key="porter" class="porter-item">
+              <div class="porter-avatar">{{ porter.charAt(0) }}</div>
               <span class="porter-name">{{ porter }}</span>
               <button 
                 v-if="showPorterManager" 
-                class="remove-porter" 
+                class="btn-icon remove-porter" 
                 @click="handleRemovePorterFromShift(porter)" 
                 title="Remove porter"
               >
-                &times;
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
               </button>
             </div>
           </div>
         </div>
       </div>
       
-      <div class="task-stats">
-        <div class="stat-item" @click="navigateToPendingTasks">
-          <div class="stat-icon pending">
-            <span>{{ pendingTasks.length }}</span>
+      <!-- Task Statistics Card -->
+      <div class="dashboard-card stats-card">
+        <div class="card-header">
+          <div class="title-area">
+            <h2>Task Statistics</h2>
           </div>
-          <div class="stat-label">Pending</div>
         </div>
         
-        <div class="stat-item" @click="navigateToCompletedTasks">
-          <div class="stat-icon completed">
-            <span>{{ completedTasks.length }}</span>
+        <div class="card-content">
+          <div class="stats-grid">
+            <div class="stat-box" @click="navigateToPendingTasks">
+              <div class="stat-header">
+                <span class="stat-label">Pending Tasks</span>
+                <span class="stat-indicator pending"></span>
+              </div>
+              <div class="stat-value">{{ pendingTasks.length }}</div>
+              <div class="stat-action">View &rarr;</div>
+            </div>
+            
+            <div class="stat-box" @click="navigateToCompletedTasks">
+              <div class="stat-header">
+                <span class="stat-label">Completed Tasks</span>
+                <span class="stat-indicator completed"></span>
+              </div>
+              <div class="stat-value">{{ completedTasks.length }}</div>
+              <div class="stat-action">View &rarr;</div>
+            </div>
+            
+            <div class="stat-box total">
+              <div class="stat-header">
+                <span class="stat-label">Total Tasks</span>
+                <span class="stat-indicator total"></span>
+              </div>
+              <div class="stat-value">{{ currentShift.tasks.length }}</div>
+            </div>
           </div>
-          <div class="stat-label">Completed</div>
         </div>
-      </div>
-    </section>
-    
-    <section v-if="pendingTasks.length > 0" class="recent-task-section">
-      <div class="section-header">
-        <h2>Recent Tasks</h2>
-        <button class="view-all-link" @click="navigateToPendingTasks">View All</button>
       </div>
       
-      <div class="task-list">
-        <div 
-          v-for="task in recentPendingTasks" 
-          :key="task.id"
-          class="task-item"
-          @click="viewTaskDetail(task.id)"
-        >
-          <TaskCard :task="task" :compact="true" />
+      <!-- Recent Tasks Card -->
+      <div v-if="pendingTasks.length > 0" class="dashboard-card tasks-card">
+        <div class="card-header">
+          <div class="title-area">
+            <h2>Recent Tasks</h2>
+          </div>
+          <button class="btn-text" @click="navigateToPendingTasks">View All</button>
+        </div>
+        
+        <div class="card-content">
+          <div class="tasks-list">
+            <div 
+              v-for="task in recentPendingTasks" 
+              :key="task.id"
+              class="task-item"
+              @click="viewTaskDetail(task.id)"
+            >
+              <TaskCard :task="task" :compact="true" />
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Empty State -->
+      <div v-else-if="currentShift.tasks.length === 0" class="dashboard-card empty-card">
+        <div class="card-content centered">
+          <div class="empty-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              <path d="M12 11v6"></path>
+              <path d="M9 18h6"></path>
+            </svg>
+          </div>
+          <h3>No Tasks Yet</h3>
+          <p>Click the + button to create your first task</p>
         </div>
       </div>
     </section>
     
-    <section v-else-if="isLoading && !currentShift" class="loading-state">
+    <!-- Loading State -->
+    <section v-else-if="isLoading" class="loading-state">
       <div class="spinner"></div>
-      <p>Loading tasks...</p>
-    </section>
-    
-    <section v-else-if="currentShift && currentShift.tasks.length === 0" class="empty-state">
-      <div class="empty-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-          <path d="M12 11v6"></path>
-          <path d="M9 18h6"></path>
-        </svg>
-      </div>
-      <h3>No Tasks Yet</h3>
-      <p>Create your first task to get started</p>
+      <p>Loading shift data...</p>
     </section>
     
     <!-- Floating Action Button for creating a new task -->
@@ -164,8 +222,6 @@
         </div>
       </div>
     </div>
-    
-    <!-- Removed TabNavigation as all navigation items are in header -->
   </main>
 </template>
 
@@ -173,7 +229,7 @@
 import { ref, computed, inject, onMounted } from 'vue'
 import { useShiftStore } from '../stores/shift'
 import { useSettingsStore } from '../stores/settings'
-import { formatDate } from '../utils/date'
+import { formatDate, formatTime } from '../utils/date'
 import type { RouteParams } from '../types'
 import TaskCard from '../components/TaskCard.vue'
 
@@ -270,14 +326,17 @@ const handleRemovePorterFromShift = (porter: string) => {
   flex-direction: column;
   min-height: 100%;
   padding: var(--spacing-md);
-  padding-bottom: var(--spacing-md);
-  max-width: 800px;
+  padding-bottom: var(--spacing-xl);
+  max-width: 960px;
   margin: 0 auto;
   width: 100%;
 }
 
-.top-header {
-  margin-bottom: var(--spacing-xs);
+/* Page Header */
+.page-header {
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-light);
 }
 
 h1 {
@@ -300,35 +359,75 @@ h3 {
   margin: 0;
 }
 
-/* Task Summary Card */
-.task-summary-card {
-  margin-bottom: var(--spacing-md);
-  background-color: var(--color-card);
-  border-radius: var(--border-radius-lg);
-  overflow: hidden;
+/* Dashboard Layout */
+.shift-dashboard {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-md);
 }
 
-.summary-header {
-  padding: var(--spacing-md);
+@media (min-width: 768px) {
+  .shift-dashboard {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .shift-overview {
+    grid-column: 1 / 3;
+  }
+  
+  .stats-card {
+    grid-column: 1 / 3;
+  }
+  
+  .tasks-card, .empty-card {
+    grid-column: 1 / 3;
+  }
+}
+
+/* Card Styles */
+.dashboard-card {
+  background-color: white;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border-light);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: var(--spacing-md);
   border-bottom: 1px solid var(--color-border-light);
+  background-color: var(--color-card);
 }
 
-.shift-info {
+.title-area {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.card-content {
+  padding: var(--spacing-md);
+}
+
+.card-content.centered {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--spacing-xl);
 }
 
+/* Shift Badge */
 .shift-badge {
-  display: inline-flex;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   color: white;
   padding: 2px var(--spacing-sm);
   border-radius: var(--border-radius-pill);
-  margin-bottom: 2px;
+  text-transform: uppercase;
 }
 
 .shift-badge.day {
@@ -339,192 +438,271 @@ h3 {
   background-color: var(--color-secondary);
 }
 
-.shift-date {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
+/* Info Grid */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--spacing-md);
 }
 
-/* Porter Management Styles */
-.porters-section {
+.info-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-light);
+  margin-bottom: var(--spacing-xs);
+}
+
+.info-value {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+/* Porter Management */
+.porter-manager {
   padding: var(--spacing-md);
   border-bottom: 1px solid var(--color-border-light);
+  background-color: var(--color-card-alt, #f9f9f9);
 }
 
-.section-title {
+.porter-selection {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.porter-selection select {
+  flex: 1;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+}
+
+.porter-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.porter-item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius);
+  background-color: var(--color-card-alt, #f9f9f9);
+}
+
+.porter-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-bold);
+  margin-right: var(--spacing-sm);
+}
+
+.porter-name {
+  flex: 1;
+  font-weight: var(--font-weight-medium);
+}
+
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-text-light);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-icon:hover {
+  background-color: rgba(var(--color-danger-rgb), 0.1);
+  color: var(--color-danger);
+}
+
+/* Stats Grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.stat-box {
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  background-color: var(--color-card-alt, #f9f9f9);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+  min-height: 120px;
+}
+
+.stat-box:hover {
+  transform: translateY(-2px);
+}
+
+.stat-box.total {
+  cursor: default;
+}
+
+.stat-box.total:hover {
+  transform: none;
+}
+
+.stat-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-sm);
 }
 
-.porter-management {
-  margin-bottom: var(--spacing-md);
+.stat-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
 }
 
-.porter-selection {
+.stat-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.stat-indicator.pending {
+  background-color: var(--color-pending);
+}
+
+.stat-indicator.completed {
+  background-color: var(--color-success);
+}
+
+.stat-indicator.total {
+  background-color: var(--color-primary);
+}
+
+.stat-value {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
+  margin-top: auto;
+  margin-bottom: var(--spacing-sm);
+}
+
+.stat-action {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  margin-top: auto;
+}
+
+/* Tasks List */
+.tasks-list {
   display: flex;
+  flex-direction: column;
   gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
 }
 
-.porter-selection select {
-  flex: 1;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border: 1px solid var(--color-border);
+.task-item {
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.task-item:hover {
+  transform: translateY(-2px);
+}
+
+/* Button Styles */
+.btn-primary, .btn-secondary, .btn-danger, .btn-outline {
+  padding: var(--spacing-xs) var(--spacing-md);
   border-radius: var(--border-radius);
-  background-color: white;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  border: none;
+  transition: background-color var(--transition-fast);
   font-size: var(--font-size-sm);
 }
 
-.btn-small {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  font-size: var(--font-size-sm);
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-secondary-dark);
+}
+
+.btn-danger {
+  background-color: var(--color-danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: var(--color-danger-dark);
 }
 
 .btn-outline {
   background: none;
   border: 1px solid var(--color-primary);
   color: var(--color-primary);
-  border-radius: var(--border-radius);
-  cursor: pointer;
 }
 
 .btn-outline:hover {
   background-color: rgba(var(--color-primary-rgb), 0.05);
 }
 
-.empty-porters {
-  background-color: var(--color-secondary-light);
-  padding: var(--spacing-sm);
-  border-radius: var(--border-radius);
-  text-align: center;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-}
-
-.porter-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
-}
-
-.porter-tag {
-  display: flex;
-  align-items: center;
-  background-color: var(--color-primary-light);
-  color: var(--color-primary);
-  padding: 2px var(--spacing-sm);
-  border-radius: var(--border-radius-pill);
-  font-size: var(--font-size-sm);
-}
-
-.remove-porter {
+.btn-text {
   background: none;
   border: none;
   color: var(--color-primary);
   cursor: pointer;
-  font-size: var(--font-size-md);
-  line-height: 1;
-  padding: 0 0 0 var(--spacing-xs);
-}
-
-/* Task Stats */
-.task-stats {
-  display: flex;
-  padding: var(--spacing-md);
-  gap: var(--spacing-md);
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  padding: var(--spacing-md);
-  border-radius: var(--border-radius-lg);
-  transition: background-color 0.2s ease;
-  cursor: pointer;
-  position: relative;
-}
-
-/* Make the stat items look more like buttons */
-.stat-item:hover {
-  background-color: rgba(0, 0, 0, 0.03);
-}
-
-.stat-item:active {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.stat-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--spacing-sm);
-}
-
-.stat-icon.pending {
-  background-color: rgba(var(--color-pending-rgb), 0.1);
-  color: var(--color-pending);
-}
-
-.stat-icon.completed {
-  background-color: rgba(var(--color-success-rgb), 0.1);
-  color: var(--color-success);
-}
-
-.stat-label {
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-}
-
-/* Add subtle arrow to indicate these are navigation elements */
-.stat-item:after {
-  content: "›";
-  position: absolute;
-  bottom: var(--spacing-xs);
-  font-size: var(--font-size-lg);
-  color: var(--color-text-light);
-  opacity: 0.6;
-}
-
-/* Section headers */
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--spacing-xs);
-}
-
-.view-all-link {
-  color: var(--color-primary);
-  background: none;
-  border: none;
-  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  cursor: pointer;
+  font-size: var(--font-size-sm);
   padding: var(--spacing-xs) var(--spacing-sm);
 }
 
-/* Recent Tasks */
-.recent-task-section {
-  margin-bottom: var(--spacing-lg);
+.btn-text:hover {
+  text-decoration: underline;
 }
 
-.task-list {
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-md);
+  color: var(--color-text-light);
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--spacing-md);
 }
 
-/* Empty & Loading states */
-.empty-state, .loading-state {
+.empty-icon {
+  margin-bottom: var(--spacing-lg);
+  opacity: 0.6;
+}
+
+/* Loading State */
+.loading-state {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -535,11 +713,6 @@ h3 {
   color: var(--color-text-light);
 }
 
-.empty-icon, .spinner {
-  margin-bottom: var(--spacing-lg);
-  opacity: 0.6;
-}
-
 .spinner {
   width: 40px;
   height: 40px;
@@ -547,6 +720,7 @@ h3 {
   border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 1s ease-in-out infinite;
+  margin-bottom: var(--spacing-lg);
 }
 
 @keyframes spin {
@@ -572,6 +746,11 @@ h3 {
   cursor: pointer;
   z-index: 10;
   transition: transform var(--transition-fast);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.fab:hover {
+  transform: scale(1.05);
 }
 
 .fab:active {
@@ -661,14 +840,6 @@ h3 {
   to {
     transform: translateY(0);
     opacity: 1;
-  }
-}
-
-/* Tablet and larger screens */
-@media (min-width: 768px) {
-  .tasks-view {
-    max-width: 800px;
-    margin: 0 auto;
   }
 }
 </style>
