@@ -18,7 +18,7 @@
           <select 
             v-model="form.porterId" 
             class="form-control"
-            :disabled="editing || availablePorters.length === 0"
+            :disabled="availablePorters.length === 0"
           >
             <option value="" disabled>Select a porter</option>
             <option v-for="porter in selectablePorters" :key="porter" :value="porter">
