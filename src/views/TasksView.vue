@@ -55,7 +55,7 @@
       </div>
       
       <!-- Tasks Tab Content -->
-      <div v-if="activeTab === 'tasks'">
+      <div v-if="activeTab === 'tasks'" class="tab-content-container">
         <!-- Task Statistics Card -->
         <div class="dashboard-card stats-card">
           <div class="card-header">
@@ -136,69 +136,71 @@
       </div>
       
       <!-- Porters Tab Content -->
-      <div v-else-if="activeTab === 'porters'" class="dashboard-card porters-card">
-        <div class="card-header">
-          <div class="title-area">
-            <h2>Porters Management</h2>
-          </div>
-          <button 
-            v-if="!showPorterManager" 
-            class="btn-primary"
-            @click="showPorterManager = true"
-          >
-            Add Porter
-          </button>
-          <button 
-            v-else 
-            class="btn-secondary"
-            @click="showPorterManager = false"
-          >
-            Done
-          </button>
-        </div>
-        
-        <div v-if="showPorterManager" class="porter-manager">
-          <div class="porter-selection">
-            <select 
-              v-model="selectedPorter" 
-              class="form-control"
-              :disabled="!availablePorters.length"
-            >
-              <option value="" disabled>Select porter to add</option>
-              <option v-for="porter in availablePorters" :key="porter" :value="porter">
-                {{ porter }}
-              </option>
-            </select>
+      <div v-else-if="activeTab === 'porters'" class="tab-content-container">
+        <div class="dashboard-card porters-card">
+          <div class="card-header">
+            <div class="title-area">
+              <h2>Porters Management</h2>
+            </div>
             <button 
-              class="btn-primary" 
-              @click="handleAddPorterToShift"
-              :disabled="!selectedPorter"
+              v-if="!showPorterManager" 
+              class="btn-primary"
+              @click="showPorterManager = true"
             >
-              Add
+              Add Porter
+            </button>
+            <button 
+              v-else 
+              class="btn-secondary"
+              @click="showPorterManager = false"
+            >
+              Done
             </button>
           </div>
-        </div>
-        
-        <div class="card-content">
-          <div v-if="assignedPorters.length === 0" class="empty-state">
-            <p>No porters assigned to this shift.</p>
-            <button v-if="!showPorterManager" class="btn-outline" @click="showPorterManager = true">Assign Porters</button>
+          
+          <div v-if="showPorterManager" class="porter-manager">
+            <div class="porter-selection">
+              <select 
+                v-model="selectedPorter" 
+                class="form-control"
+                :disabled="!availablePorters.length"
+              >
+                <option value="" disabled>Select porter to add</option>
+                <option v-for="porter in availablePorters" :key="porter" :value="porter">
+                  {{ porter }}
+                </option>
+              </select>
+              <button 
+                class="btn-primary" 
+                @click="handleAddPorterToShift"
+                :disabled="!selectedPorter"
+              >
+                Add
+              </button>
+            </div>
           </div>
           
-          <div v-else class="porter-list">
-            <div v-for="porter in assignedPorters" :key="porter" class="porter-item">
-              <div class="porter-avatar">{{ porter.charAt(0) }}</div>
-              <span class="porter-name">{{ porter }}</span>
-              <button 
-                class="btn-icon remove-porter" 
-                @click="handleRemovePorterFromShift(porter)" 
-                title="Remove porter"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
+          <div class="card-content">
+            <div v-if="assignedPorters.length === 0" class="empty-state">
+              <p>No porters assigned to this shift.</p>
+              <button v-if="!showPorterManager" class="btn-outline" @click="showPorterManager = true">Assign Porters</button>
+            </div>
+            
+            <div v-else class="porter-list">
+              <div v-for="porter in assignedPorters" :key="porter" class="porter-item">
+                <div class="porter-avatar">{{ porter.charAt(0) }}</div>
+                <span class="porter-name">{{ porter }}</span>
+                <button 
+                  class="btn-icon remove-porter" 
+                  @click="handleRemovePorterFromShift(porter)" 
+                  title="Remove porter"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -391,8 +393,12 @@ h3 {
     grid-template-columns: repeat(2, 1fr);
   }
   
-  .shift-overview {
+  .shift-overview, .tabs-container {
     grid-column: 1 / 3;
+  }
+  
+  .porters-card {
+    grid-column: span 1;
   }
   
   .stats-card {
@@ -470,6 +476,10 @@ h3 {
 .tabs-container {
   margin-bottom: var(--spacing-md);
   grid-column: 1 / -1;
+}
+
+.tab-content-container {
+  display: contents; /* This makes children appear as direct children of the grid parent */
 }
 
 .tabs {
