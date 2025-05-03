@@ -9,7 +9,7 @@ import { saveSettings as apiSaveSettings, saveLocations as apiSaveLocations } fr
 export const useSettingsStore = defineStore('settings', () => {
   // State
   const supervisors = ref<string[]>([])
-  const porters = ref<Porter[]>([])
+  const porters = ref<string[]>([])
   const jobCategories = ref<JobCategoriesMap>({})
   const buildings = ref<Building[]>([])
   const jobCategoryDefaults = ref<JobCategoryDefault[]>([])

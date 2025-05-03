@@ -1,7 +1,7 @@
 <template>
   <main class="home-view">
     <!-- ACTIVE SHIFT VIEW -->
-    <section v-if="isShiftActive && currentShift && currentShift.value" class="active-shift">
+    <section v-if="isShiftActive && currentShift" class="active-shift">
       <header class="top-header">
         <h1>Current Shift</h1>
       </header>
@@ -10,8 +10,8 @@
         <div class="shift-header">
           <div class="shift-title">
             <h2>{{ shiftTitle }}</h2>
-            <div class="shift-badge" :class="currentShift.value.type.toLowerCase()">
-              {{ currentShift.value.type }}
+            <div class="shift-badge" :class="currentShift.type.toLowerCase()">
+              {{ currentShift.type }}
             </div>
           </div>
           
@@ -24,7 +24,7 @@
             </div>
             <div class="supervisor-info">
               <div class="supervisor-label">Supervisor</div>
-              <div class="supervisor-name">{{ currentShift.value.supervisor }}</div>
+              <div class="supervisor-name">{{ currentShift.supervisor }}</div>
             </div>
           </div>
           
@@ -37,7 +37,7 @@
             </div>
             <div class="time-details">
               <div class="time-label">Started</div>
-              <div class="time-value">{{ formatTime(new Date(currentShift.value.startTime)) }}</div>
+              <div class="time-value">{{ formatTime(new Date(currentShift.startTime)) }}</div>
             </div>
           </div>
         </div>
@@ -45,16 +45,16 @@
         <div class="shift-progress">
           <div class="progress-label">
             <span>Task Completion</span>
-            <span>{{ Math.round((completedTasksCount / (currentShift.value.tasks.length || 1)) * 100) }}%</span>
+            <span>{{ Math.round((completedTasksCount / (currentShift.tasks.length || 1)) * 100) }}%</span>
           </div>
           <div class="progress">
-            <div class="progress-bar" :style="{ width: `${(completedTasksCount / (currentShift.value.tasks.length || 1)) * 100}%` }"></div>
+            <div class="progress-bar" :style="{ width: `${(completedTasksCount / (currentShift.tasks.length || 1)) * 100}%` }"></div>
           </div>
         </div>
         
         <div class="shift-stats">
           <div class="stat-item total">
-            <div class="stat-value">{{ currentShift.value.tasks.length }}</div>
+            <div class="stat-value">{{ currentShift.tasks.length }}</div>
             <div class="stat-label">Total Tasks</div>
           </div>
           
@@ -114,7 +114,7 @@
         </div>
         
         <div class="shift-actions">
-          <button class="btn-primary btn-large" @click="navigate('tasks')">
+          <button class="btn-primary btn-large" @click="safeNavigate('tasks')">
             View Tasks
           </button>
           <button class="btn-danger btn-large" @click="showEndShiftConfirm = true">
@@ -126,7 +126,7 @@
       <!-- Quick Actions Section -->
       <div v-if="pendingTasksCount > 0" class="quick-actions-section">
         <h3>Pending Tasks</h3>
-        <div class="quick-action-card" @click="navigate('pendingTasks')">
+        <div class="quick-action-card" @click="safeNavigate('pendingTasks')">
           <div class="action-icon pending">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
@@ -162,7 +162,7 @@
           <p>There is currently an active shift. You need to end the current shift before starting a new one.</p>
         </div>
         <div class="notification-actions">
-          <button class="btn-primary" @click="navigate('tasks')">
+          <button class="btn-primary" @click="safeNavigate('tasks')">
             Open Current Shift
           </button>
           <button class="btn-danger" @click="showEndShiftConfirm = true">
@@ -207,7 +207,6 @@
               <select 
                 v-model="selectedPorter" 
                 class="form-control"
-                :disabled="!availableInitialPorters.length"
               >
                 <option value="" disabled>Select porter</option>
                 <option v-for="porter in allPorters" :key="porter" :value="porter">
@@ -282,7 +281,7 @@
       <div class="recent-shifts" v-if="recentShifts.length > 0">
         <div class="section-header">
           <h3>Recent Shifts</h3>
-          <button class="view-all-link" @click="navigateToArchive">View All</button>
+          <button class="view-all-link" @click="safeNavigate('archive')">View All</button>
         </div>
         
         <div class="shift-list">
@@ -290,7 +289,7 @@
             v-for="shift in recentShifts" 
             :key="shift.id" 
             class="shift-list-item"
-            @click="viewShiftDetails(shift.id)"
+            @click="safeNavigate('shiftDetail', { shiftId: shift.id })"
           >
             <div class="shift-list-icon" :class="shift.type.toLowerCase()">
               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -358,6 +357,13 @@ import TabNavigation from '../components/TabNavigation.vue'
 // Router injection
 const navigate = inject<(route: string, params?: RouteParams) => void>('navigate')
 
+// Safe navigation wrapper
+const safeNavigate = (route: string, params?: RouteParams) => {
+  if (navigate) {
+    navigate(route, params)
+  }
+}
+
 // Store
 const shiftStore = useShiftStore()
 const settingsStore = useSettingsStore()
@@ -383,31 +389,31 @@ const initialPorters = ref<string[]>([])
 
 // Computed
 const shiftTitle = computed(() => {
-  if (!currentShift.value) return ''
+  if (!currentShift) return ''
   
-  const date = new Date(currentShift.value.date)
+  const date = new Date(currentShift.date)
   return `${formatDate(date)}`
 })
 
 const pendingTasksCount = computed(() => {
-  if (!currentShift.value) return 0
-  return currentShift.value.tasks.filter(task => task.status === 'Pending').length
+  if (!currentShift) return 0
+  return currentShift.tasks.filter((task: any) => task.status === 'Pending').length
 })
 
 const completedTasksCount = computed(() => {
-  if (!currentShift.value) return 0
-  return currentShift.value.tasks.filter(task => task.status === 'Completed').length
+  if (!currentShift) return 0
+  return currentShift.tasks.filter((task: any) => task.status === 'Completed').length
 })
 
 const recentShifts = computed(() => {
-  if (!archivedShifts.value) return []
-  return archivedShifts.value.slice(0, 3)
+  if (!archivedShifts) return []
+  return archivedShifts.slice(0, 3)
 })
 
 // Computed properties for porter management
 const assignedPorters = computed(() => {
-  if (!currentShift.value || !currentShift.value.assignedPorters) return []
-  return currentShift.value.assignedPorters
+  if (!currentShift || !currentShift.assignedPorters) return []
+  return currentShift.assignedPorters
 })
 
 const availablePorters = computed(() => {
@@ -418,6 +424,8 @@ const availablePorters = computed(() => {
 // Computed properties for initial porter assignment (before shift starts)
 const availableInitialPorters = computed(() => {
   // Filter out porters that are already in the initialPorters list
+  console.log("All porters:", allPorters);
+  console.log("Initial porters:", initialPorters.value);
   return allPorters.filter(porter => !initialPorters.value.includes(porter))
 })
 
@@ -432,7 +440,7 @@ const startSpecificShift = (type: 'Day' | 'Night') => {
     console.log(`Starting ${type} shift with supervisor:`, supervisor.value);
     
     // Check if there's already an active shift
-    if (isShiftActive.value && currentShift.value) {
+    if (isShiftActive && currentShift) {
       console.log('There is already an active shift. Ending current shift before starting a new one.');
       
       // End the current shift
@@ -454,20 +462,26 @@ const startSpecificShift = (type: 'Day' | 'Night') => {
     if (initialPorters.value && initialPorters.value.length > 0) {
       console.log(`Adding ${initialPorters.value.length} porters to shift:`, initialPorters.value);
       
-      initialPorters.value.forEach(porter => {
+      // Add each porter to the shift
+      for (const porter of initialPorters.value) {
         try {
           const success = addPorterToShift(porter);
           console.log(`Added porter ${porter}: ${success ? 'Success' : 'Failed'}`);
         } catch (err) {
           console.error(`Error adding porter ${porter}:`, err);
         }
-      });
+      }
       
       // Clear the initial porters list
       initialPorters.value = [];
+      
+      // Save to localStorage again to ensure the porters are saved
+      if (currentShift) {
+        localStorage.setItem('porter-track-current-shift', JSON.stringify(currentShift));
+      }
     }
     
-    // Force a UI refresh by navigating to the tasks page
+    // Force a UI refresh by using location.href to navigate to the tasks page
     console.log('Navigating to tasks view...');
     window.location.href = '/tasks';
   } catch (error) {
@@ -500,15 +514,7 @@ const endCurrentShift = () => {
   showEndShiftConfirm.value = false
   
   // Force UI refresh by navigating back to home
-  if (navigate) navigate('home')
-}
-
-const viewShiftDetails = (shiftId: string) => {
-  if (navigate) navigate('shiftDetail', { shiftId })
-}
-
-const navigateToArchive = () => {
-  if (navigate) navigate('archive')
+  safeNavigate('home')
 }
 
 const handleAddPorterToShift = () => {

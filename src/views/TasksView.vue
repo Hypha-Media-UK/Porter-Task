@@ -158,18 +158,23 @@
             </button>
           </div>
           
-          <div v-if="showPorterManager" class="porter-manager">
-            <div class="porter-selection">
-              <select 
-                v-model="selectedPorter" 
-                class="form-control"
-                :disabled="!availablePorters.length"
-              >
-                <option value="" disabled>Select porter to add</option>
-                <option v-for="porter in availablePorters" :key="porter" :value="porter">
-                  {{ porter }}
-                </option>
-              </select>
+<div v-if="showPorterManager" class="porter-manager">
+  <div v-if="debug">
+    <pre style="font-size: 10px; overflow: auto; max-height: 100px; background: #f5f5f5; padding: 5px; margin-bottom: 10px;">
+All porters: {{ JSON.stringify(allPorters) }}
+Assigned porters: {{ JSON.stringify(assignedPorters) }}
+    </pre>
+  </div>
+  <div class="porter-selection">
+    <select 
+      v-model="selectedPorter" 
+      class="form-control"
+    >
+      <option value="" disabled>Select porter to add</option>
+      <option v-for="porter in allPorters" :key="porter" :value="porter">
+        {{ porter }}
+      </option>
+    </select>
               <button 
                 class="btn-primary" 
                 @click="handleAddPorterToShift"
@@ -422,6 +427,7 @@ const showPorterManager = ref(false)
 const selectedPorter = ref('')
 const activeTab = ref('tasks') // Default tab
 const refreshKey = ref(0) // Key for forcing component refresh
+const debug = ref(true) // Enable debug output
 
 // Stores
 const shiftStore = useShiftStore()
@@ -443,7 +449,11 @@ const assignedPorters = computed(() => {
 
 const availablePorters = computed(() => {
   // Filter out porters that are already assigned to the shift
-  return allPorters.filter(porter => !assignedPorters.value.includes(porter))
+  console.log("TasksView - All porters (from settings):", allPorters);
+  console.log("TasksView - Assigned porters (from shift):", assignedPorters.value);
+  
+  // We want to show all available porters from the settings
+  return allPorters;
 })
 
 // Porters assigned to the shift but not currently assigned to a department

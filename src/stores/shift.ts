@@ -85,7 +85,18 @@ export const useShiftStore = defineStore('shift', () => {
         try {
           const parsedShift = JSON.parse(storedShift) as Shift
           currentShift.value = parsedShift
+          
+          // Ensure assigned porters and porterAssignments arrays exist
+          if (!currentShift.value.assignedPorters) {
+            currentShift.value.assignedPorters = []
+          }
+          
+          if (!currentShift.value.porterAssignments) {
+            currentShift.value.porterAssignments = []
+          }
+          
           console.log('Loaded current shift from localStorage:', parsedShift)
+          console.log('Assigned porters:', currentShift.value.assignedPorters || [])
           return true
         } catch (parseErr) {
           console.error('Error parsing stored shift:', parseErr)
@@ -160,7 +171,8 @@ export const useShiftStore = defineStore('shift', () => {
       supervisor,
       startTime: now.toISOString(),
       tasks: [],
-      assignedPorters: [] // Initialize with empty array
+      assignedPorters: [], // Initialize with empty array
+      porterAssignments: [] // Initialize porter assignments array
     }
     
     currentShift.value = shift

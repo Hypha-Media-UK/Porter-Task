@@ -3,8 +3,10 @@
     <!-- Department Assignments Section -->
     <div class="section-header">
       <h3>Department Assignments</h3>
+      <pre v-if="debug" style="font-size: 10px; overflow: auto; max-height: 100px; background: #f5f5f5; padding: 5px; margin-bottom: 10px;">
+Assigned Porters: {{ JSON.stringify(assignedPorters) }}
+</pre>
       <button 
-        v-if="assignedPorters.length > 0"
         class="btn-primary add-btn" 
         @click="showAssignmentModal = true"
       >
@@ -194,13 +196,18 @@ const settingsStore = useSettingsStore()
 // Computed data
 const assignments = computed(() => shiftStore.porterAssignments)
 const allDepartments = computed(() => settingsStore.designationDepartments)
-const assignedPorters = computed(() => shiftStore.currentShift?.assignedPorters || [])
+const assignedPorters = computed(() => {
+  const porters = shiftStore.currentShift?.assignedPorters || []
+  console.log("PorterAssignmentManager - Assigned porters:", porters)
+  return porters
+})
 
 // State for modals
 const showAssignmentModal = ref(false)
 const editingAssignment = ref<PorterAssignment | undefined>(undefined)
 const showDeleteModal = ref(false)
 const deletingAssignment = ref<PorterAssignment | undefined>(undefined)
+const debug = ref(true) // Enable debug info
 
 // Timeline data
 const timelineHours = computed(() => {

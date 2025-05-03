@@ -130,13 +130,35 @@ const emit = defineEmits<{
 const settingsStore = useSettingsStore()
 const shiftStore = useShiftStore()
 const departments = computed(() => settingsStore.designationDepartments)
-const assignedPorters = computed(() => props.porters || shiftStore.currentShift?.assignedPorters || [])
+const assignedPorters = computed(() => {
+  const portersFromProps = props.porters || [];
+  const portersFromShift = shiftStore.currentShift?.assignedPorters || [];
+  console.log("MODAL - Porters from props:", portersFromProps);
+  console.log("MODAL - Porters from shift:", portersFromShift);
+  console.log("MODAL - All porters:", settingsStore.porters);
+  return portersFromProps.length ? portersFromProps : portersFromShift;
+})
+
+// Get list of porters already assigned to departments
+const portersWithAssignments = computed(() => {
+  const assignments = shiftStore.porterAssignments
+  // Extract unique porter IDs from all assignments
+  const assigned = [...new Set(assignments.map(a => a.porterId))]
+  console.log('Porters with assignments:', assigned)
+  return assigned
+})
+
 const availablePorters = computed(() => {
   // If editing, show the current porter + all unassigned porters
   if (props.editing && props.assignment) {
     return [...new Set([props.assignment.porterId, ...assignedPorters.value])]
   }
-  return assignedPorters.value
+  
+  console.log('All assigned porters from the shift:', assignedPorters.value)
+  
+  // For new assignments, always show all porters assigned to the shift
+  // This is the key fix - we're no longer filtering based on existing assignments
+  return props.porters || []
 })
 
 // Form state
