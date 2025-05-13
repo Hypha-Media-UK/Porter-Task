@@ -27,6 +27,10 @@ export async function createTask(taskData: {
   }
   
   const now = new Date()
+  const shiftId = currentShift.value.id
+  
+  // Check if this shift is local-only (doesn't exist in Supabase)
+  const isLocalOnly = localStorage.getItem('shift-' + shiftId + '-local-only') === 'true'
   
   const newTaskData = {
     receivedTime: taskData.receivedTime || now.toISOString(),
@@ -35,7 +39,32 @@ export async function createTask(taskData: {
     ...taskData
   }
   
+  // If we know this is a local-only shift, don't try to create task in database
+  if (isLocalOnly) {
+    console.log('Shift exists only locally, creating task locally without database attempt')
+    
+    // Create task locally
+    const task: Task = {
+      id: nanoid(),
+      ...newTaskData
+    }
+    
+    // Add to current shift
+    currentShift.value.tasks.unshift(task)
+    
+    // Save updated shift to localStorage
+    saveCurrentShiftToLocalStorage()
+    
+    console.log('Task created locally (local-only shift):', task)
+    
+    return task
+  }
+  
+  // Normal path - try database first, fall back to local
   try {
+    // First try to ensure the shift exists in the database
+    await ensureShiftExistsInDatabase()
+    
     // Create task in database
     const task = await db.createTask(currentShift.value.id, newTaskData)
     
@@ -63,9 +92,47 @@ export async function createTask(taskData: {
     // Save updated shift to localStorage
     saveCurrentShiftToLocalStorage()
     
+    // Mark this shift as local-only to avoid future database attempts
+    localStorage.setItem('shift-' + shiftId + '-local-only', 'true')
+    
     console.log('Task created locally:', task)
     
     return task
+  }
+}
+
+/**
+ * Helper function to ensure the current shift exists in the database
+ * before trying to create a task. This helps when the app has been
+ * restarted and the local state thinks a shift exists but it wasn't
+ * actually created in the database.
+ */
+async function ensureShiftExistsInDatabase(): Promise<void> {
+  if (!currentShift.value) return;
+
+  try {
+    // Try to fetch the shift from the database to confirm it exists
+    const shift = await db.getShift(currentShift.value.id);
+    
+    // If it doesn't exist but we have it locally, recreate it
+    if (!shift) {
+      console.log('Shift not found in database, attempting to recreate it');
+      
+      // Recreate the shift in the database
+      const shiftData = {
+        id: currentShift.value.id,
+        date: currentShift.value.date,
+        type: currentShift.value.type,
+        supervisor: currentShift.value.supervisor,
+        startTime: currentShift.value.startTime
+      };
+      
+      await db.createShift(shiftData);
+      console.log('Shift recreated in database');
+    }
+  } catch (err) {
+    console.error('Error checking/recreating shift in database:', err);
+    throw err; // Rethrow so caller knows this failed
   }
 }
 

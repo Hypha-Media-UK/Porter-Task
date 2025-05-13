@@ -21,12 +21,30 @@ export async function startShift(type: ShiftType, supervisor: string): Promise<S
   
   const now = new Date()
   
+  // Generate a consistent ID that will be used both locally and in the database
+  const shiftId = nanoid();
+  
   const shiftData = {
+    id: shiftId, // Ensure the same ID is used in both places
     date: now.toISOString().split('T')[0],
     type,
     supervisor,
     startTime: now.toISOString()
   }
+  
+  // Create a complete shift object that can be used in both local and database cases
+  const completeShift: Shift = {
+    id: shiftId,
+    date: now.toISOString().split('T')[0],
+    type,
+    supervisor,
+    startTime: now.toISOString(),
+    tasks: [],
+    assignedPorters: [],
+    porterAssignments: []
+  };
+  
+  let dbSuccess = false;
   
   try {
     // Create the shift in the database
@@ -41,6 +59,7 @@ export async function startShift(type: ShiftType, supervisor: string): Promise<S
     }
     
     currentShift.value = newShift
+    dbSuccess = true;
     
     // Save to localStorage as fallback
     saveCurrentShiftToLocalStorage()
@@ -51,26 +70,18 @@ export async function startShift(type: ShiftType, supervisor: string): Promise<S
   } catch (err) {
     console.error('Error starting shift in database:', err)
     
-    // Fallback to local creation if database fails
-    const shift: Shift = {
-      id: nanoid(),
-      date: now.toISOString().split('T')[0],
-      type,
-      supervisor,
-      startTime: now.toISOString(),
-      tasks: [],
-      assignedPorters: [],
-      porterAssignments: []
-    }
-    
-    currentShift.value = shift
+    // Set the fallback shift with the same ID we would have used in the database
+    currentShift.value = completeShift;
     
     // Save to localStorage to persist across page refreshes
     saveCurrentShiftToLocalStorage()
     
-    console.log('Shift started locally:', shift)
+    // Store a flag to indicate this shift only exists locally
+    localStorage.setItem('shift-' + shiftId + '-local-only', 'true');
     
-    return shift
+    console.log('Shift started locally only (not in database):', completeShift)
+    
+    return completeShift
   }
 }
 
@@ -90,11 +101,13 @@ export async function endShift(): Promise<boolean> {
     await db.endShift(currentShift.value.id, endTime)
     
     // Update local state
-    currentShift.value.endTime = endTime
-    
-    // Add to archived shifts - create a copy to avoid reference issues
-    const shiftToArchive = { ...currentShift.value }
-    archivedShifts.value.unshift(shiftToArchive)
+    if (currentShift.value) {
+      currentShift.value.endTime = endTime
+      
+      // Add to archived shifts - create a copy to avoid reference issues
+      const shiftToArchive = { ...currentShift.value } as Shift
+      archivedShifts.value.unshift(shiftToArchive)
+    }
     
     // Save archived shift to localStorage as fallback
     try {
@@ -118,11 +131,13 @@ export async function endShift(): Promise<boolean> {
     console.error('Error ending shift in database:', err)
     
     // Update local state only if database fails
-    currentShift.value.endTime = endTime
-    
-    // Add to archived shifts - create a copy to avoid reference issues
-    const shiftToArchive = { ...currentShift.value }
-    archivedShifts.value.unshift(shiftToArchive)
+    if (currentShift.value) {
+      currentShift.value.endTime = endTime
+      
+      // Add to archived shifts - create a copy to avoid reference issues
+      const shiftToArchive = { ...currentShift.value } as Shift
+      archivedShifts.value.unshift(shiftToArchive)
+    }
     
     // Save archived shift to localStorage
     try {
