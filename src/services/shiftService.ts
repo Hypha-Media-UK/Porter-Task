@@ -85,14 +85,11 @@ export async function getCurrentShift() {
       porter_assignments(*)
     `)
     .is('end_time', null)
-    .single()
+    .maybeSingle()
   
   if (error) {
-    // If no active shift, return null
-    if (error.code === 'PGRST116') {
-      return null
-    }
-    throw error
+    console.error('Error fetching current shift:', error)
+    return null
   }
   
   return transformShiftFromSupabase(data)
