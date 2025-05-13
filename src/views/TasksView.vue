@@ -338,8 +338,7 @@ Assigned porters: {{ JSON.stringify(assignedPorters) }}
     
     <!-- Loading State -->
     <section v-else-if="isLoading" class="loading-state">
-      <div class="spinner"></div>
-      <p>Loading shift data...</p>
+      <LoadingSpinner message="Loading shift data..." />
     </section>
     
     <!-- Floating Action Button for creating a new task -->
@@ -409,7 +408,8 @@ Assigned porters: {{ JSON.stringify(assignedPorters) }}
 </template>
 
 <script setup lang="ts">
-import { ref, computed, inject, onMounted } from 'vue'
+import { ref, computed, inject, onMounted, watch } from 'vue'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 import { useShiftStore } from '../stores/shift'
 import { useSettingsStore } from '../stores/settings'
 import { formatDate, formatTime } from '../utils/date'

@@ -1,26 +1,33 @@
 <template>
   <main class="settings-view">
-    <header class="top-header">
-      <h1>Settings</h1>
-    </header>
-      
-    <!-- Settings Tabs Navigation -->
-    <div class="tabs-container">
-      <div class="tabs">
-        <button 
-          v-for="tab in tabs" 
-          :key="tab.id"
-          class="tab"
-          :class="{ active: activeTab === tab.id }"
-          @click="activeTab = tab.id"
-        >
-          {{ tab.name }}
-        </button>
-      </div>
+    <!-- Loading state -->
+    <div v-if="isLoading" class="settings-loading">
+      <LoadingSpinner message="Loading settings data..." />
     </div>
     
-    <!-- Tab content -->
-    <section class="tab-content">
+    <!-- Content (only shown when loading is complete) -->
+    <template v-else>
+      <header class="top-header">
+        <h1>Settings</h1>
+      </header>
+        
+      <!-- Settings Tabs Navigation -->
+      <div class="tabs-container">
+        <div class="tabs">
+          <button 
+            v-for="tab in tabs" 
+            :key="tab.id"
+            class="tab"
+            :class="{ active: activeTab === tab.id }"
+            @click="activeTab = tab.id"
+          >
+            {{ tab.name }}
+          </button>
+        </div>
+      </div>
+      
+      <!-- Tab content -->
+      <section class="tab-content">
         <!-- App Settings Tab -->
         <div v-if="activeTab === 'app'" class="tab-pane">
           <ApplicationSettings />
@@ -42,14 +49,17 @@
         <div v-if="activeTab === 'tasks'" class="tab-pane">
           <JobCategories />
         </div>
-    </section>
+      </section>
+    </template>
     
     <!-- Removed TabNavigation as all navigation items are in header -->
   </main>
 </template>
 
 <script setup lang="ts">
-import { ref, inject } from 'vue'
+import { ref, inject, onMounted } from 'vue'
+import { useSettingsStore } from '../stores/settings'
+import LoadingSpinner from '../components/LoadingSpinner.vue'
 import type { RouteParams } from '../types'
 import TabNavigation from '../components/TabNavigation.vue'
 import ApplicationSettings from '../components/settings/ApplicationSettings.vue'
@@ -82,8 +92,27 @@ const tabs = [
   }
 ]
 
+// Store
+const settingsStore = useSettingsStore()
+
+// Loading state
+const isLoading = ref(true)
+
 // Active tab state
 const activeTab = ref('app')
+
+// Initialize settings data
+onMounted(async () => {
+  try {
+    // Initialize all settings data at once
+    await settingsStore.initialize()
+  } catch (error) {
+    console.error('Failed to load settings:', error)
+  } finally {
+    // Even if there was an error, we should still show the UI
+    isLoading.value = false
+  }
+})
 </script>
 
 <style scoped>
@@ -195,5 +224,14 @@ h1 {
     font-size: var(--font-size-sm);
     padding: var(--spacing-md) var(--spacing-md);
   }
+}
+
+/* Loading state styles */
+.settings-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  padding: var(--spacing-xl);
 }
 </style>

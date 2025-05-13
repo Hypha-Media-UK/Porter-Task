@@ -74,29 +74,19 @@ const loadFrequentLocations = () => {
   const allFrequent: ExtendedLocationItem[] = []
   
   buildings.value.forEach(building => {
-    // Add departments marked as frequent
-    building.departments.forEach(dept => {
-      if (dept.frequent) {
-        allFrequent.push({
-          ...dept,
-          buildingId: building.id,
-          locationType: 'department',
-          order: dept.order || 999 // Default high number for unordered items
-        })
-      }
-    })
-    
-    // Add wards marked as frequent
-    building.wards.forEach(ward => {
-      if (ward.frequent) {
-        allFrequent.push({
-          ...ward,
-          buildingId: building.id,
-          locationType: 'ward',
-          order: ward.order || 999 // Default high number for unordered items
-        })
-      }
-    })
+    // Add departments marked as frequent (we only use departments now)
+    if (building.departments) {
+      building.departments.forEach(dept => {
+        if (dept.frequent) {
+          allFrequent.push({
+            ...dept,
+            buildingId: building.id,
+            locationType: 'department',
+            order: dept.order || 999 // Default high number for unordered items
+          })
+        }
+      })
+    }
   })
   
   // Sort by order value if available
@@ -115,25 +105,14 @@ const removeFromFrequent = (location: ExtendedLocationItem) => {
   const building = buildings.value.find(b => b.id === location.buildingId)
   if (!building) return
   
-  // Find the location in the building's appropriate collection
-  if (location.locationType === 'department') {
-    const dept = building.departments.find(d => d.id === location.id)
-    if (dept) {
-      dept.frequent = false
-      // Save changes
-      settingsStore.saveLocationDataToFile()
-      // Reload the frequent locations list
-      loadFrequentLocations()
-    }
-  } else {
-    const ward = building.wards.find(w => w.id === location.id)
-    if (ward) {
-      ward.frequent = false
-      // Save changes
-      settingsStore.saveLocationDataToFile()
-      // Reload the frequent locations list
-      loadFrequentLocations()
-    }
+  // Find the location in the building's departments
+  const dept = building.departments.find(d => d.id === location.id)
+  if (dept) {
+    dept.frequent = false
+    // Save changes
+    settingsStore.saveLocationDataToFile()
+    // Reload the frequent locations list
+    loadFrequentLocations()
   }
 }
 

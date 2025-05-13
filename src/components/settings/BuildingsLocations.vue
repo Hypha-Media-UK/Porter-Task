@@ -225,9 +225,10 @@ const departmentEditInput = ref<HTMLInputElement | null>(null)
 // Store new department names for each building
 const newDepartments = reactive<Record<string, string>>({})
 
-// Helper function to get all departments (combining departments and wards arrays)
+// Helper function to get all departments
 const getAllDepartments = (building: any) => {
-  return [...building.departments, ...building.wards];
+  // Only use departments array since wards no longer exists in database model
+  return building.departments || [];
 }
 
 // Building management
@@ -363,18 +364,13 @@ const startEditDepartment = (buildingId: string, departmentId: string) => {
 const confirmEditDepartment = (buildingId: string, departmentId: string) => {
   const newName = editedDepartmentName.value.trim()
   
-  // Check if it's in departments or wards and update accordingly
+  // Get the building
   const building = buildings.value.find((b: any) => b.id === buildingId)
   if (!building) return false
   
-  const isDepartment = building.departments.some((d: any) => d.id === departmentId)
-  
+  // Since we only use departments now, always update department
   if (newName) {
-    if (isDepartment) {
-      storeUpdateDepartment(buildingId, departmentId, newName)
-    } else {
-      storeUpdateWard(buildingId, departmentId, newName)
-    }
+    storeUpdateDepartment(buildingId, departmentId, newName)
     editingDepartmentBuilding.value = null
     editingDepartment.value = null
   }
@@ -390,21 +386,11 @@ const removeDepartment = (buildingId: string, departmentId: string) => {
   const building = buildings.value.find((b: any) => b.id === buildingId)
   if (!building) return
   
-  // Check if it's in departments or wards and remove accordingly
-  let itemToRemove = building.departments.find((d: any) => d.id === departmentId)
-  let isWard = false
-  
-  if (!itemToRemove) {
-    itemToRemove = building.wards.find((w: any) => w.id === departmentId)
-    isWard = true
-  }
+  // Find item to remove in departments
+  const itemToRemove = building.departments.find((d: any) => d.id === departmentId)
   
   if (itemToRemove && confirm(`Are you sure you want to remove department "${itemToRemove.name}"?`)) {
-    if (isWard) {
-      storeDeleteWard(buildingId, departmentId)
-    } else {
-      storeDeleteDepartment(buildingId, departmentId)
-    }
+    storeDeleteDepartment(buildingId, departmentId)
   }
 }
 
@@ -413,15 +399,8 @@ const toggleFrequent = (buildingId: string, department: any) => {
   const building = buildings.value.find((b: any) => b.id === buildingId)
   if (!building) return
   
-  // Find if it's in departments or wards collection
-  let target
-  let isWard = false
-  
-  target = building.departments.find((d: any) => d.id === department.id)
-  if (!target) {
-    target = building.wards.find((w: any) => w.id === department.id)
-    isWard = true
-  }
+  // Find the department to toggle
+  const target = building.departments.find((d: any) => d.id === department.id)
   
   if (target) {
     // Toggle the frequent flag
@@ -434,17 +413,10 @@ const toggleFrequent = (buildingId: string, department: any) => {
       
       // Check all departments in all buildings
       buildings.value.forEach((b: any) => {
-        // Departments
+        // Go through all departments
         b.departments.forEach((d: any) => {
           if (d.frequent && d.order !== undefined && d.order > maxOrder) {
             maxOrder = d.order
-          }
-        })
-        
-        // Wards
-        b.wards.forEach((w: any) => {
-          if (w.frequent && w.order !== undefined && w.order > maxOrder) {
-            maxOrder = w.order
           }
         })
       })
