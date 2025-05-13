@@ -5,7 +5,8 @@ import {
   currentShift, 
   archivedShifts,
   saveCurrentShiftToLocalStorage,
-  saveArchivedShiftsToLocalStorage
+  saveArchivedShiftsToLocalStorage,
+  forceShiftUpdate  // Import the new utility
 } from './shiftCore'
 
 /**
@@ -55,6 +56,9 @@ export async function createTask(taskData: {
     // Save updated shift to localStorage
     saveCurrentShiftToLocalStorage()
     
+    // Force UI update to refresh computed properties
+    forceShiftUpdate()
+    
     console.log('Task created locally (local-only shift):', task)
     
     return task
@@ -74,6 +78,9 @@ export async function createTask(taskData: {
     // Save updated shift to localStorage as fallback
     saveCurrentShiftToLocalStorage()
     
+    // Force UI update to refresh computed properties
+    forceShiftUpdate()
+    
     console.log('Task created:', task)
     
     return task
@@ -91,6 +98,9 @@ export async function createTask(taskData: {
     
     // Save updated shift to localStorage
     saveCurrentShiftToLocalStorage()
+    
+    // Force UI update to refresh computed properties
+    forceShiftUpdate()
     
     // Mark this shift as local-only to avoid future database attempts
     localStorage.setItem('shift-' + shiftId + '-local-only', 'true')
@@ -167,6 +177,9 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus): Prom
     // Save updated shift to localStorage as fallback
     saveCurrentShiftToLocalStorage()
     
+    // Force UI update to refresh computed properties
+    forceShiftUpdate()
+    
     console.log('Task updated:', task)
     
     return task
@@ -177,6 +190,9 @@ export async function updateTaskStatus(taskId: string, status: TaskStatus): Prom
     
     // Save updated shift to localStorage
     saveCurrentShiftToLocalStorage()
+    
+    // Force UI update to refresh computed properties
+    forceShiftUpdate()
     
     console.log('Task updated locally:', task)
     
@@ -213,6 +229,9 @@ export async function updateTask(taskId: string, taskData: {
         // Save updated shift to localStorage as fallback
         saveCurrentShiftToLocalStorage()
         
+        // Force UI update to refresh computed properties
+        forceShiftUpdate()
+        
         console.log('Task updated in database:', updatedTask)
         
         return updatedTask
@@ -231,6 +250,9 @@ export async function updateTask(taskId: string, taskData: {
         
         // Save updated shift to localStorage
         saveCurrentShiftToLocalStorage()
+        
+        // Force UI update to refresh computed properties
+        forceShiftUpdate()
         
         console.log('Task updated locally:', updatedTask)
         
@@ -304,6 +326,9 @@ export async function deleteTask(taskId: string): Promise<boolean> {
         // Save updated shift to localStorage as fallback
         saveCurrentShiftToLocalStorage()
         
+        // Force UI update to refresh computed properties
+        forceShiftUpdate()
+        
         console.log('Task deleted from current shift:', taskId)
         
         return true
@@ -315,6 +340,9 @@ export async function deleteTask(taskId: string): Promise<boolean> {
         
         // Save updated shift to localStorage
         saveCurrentShiftToLocalStorage()
+        
+        // Force UI update to refresh computed properties
+        forceShiftUpdate()
         
         console.log('Task deleted from current shift locally:', taskId)
         

@@ -6,7 +6,8 @@ import {
   isLoading, 
   error, 
   CURRENT_SHIFT_STORAGE_KEY,
-  ARCHIVED_SHIFTS_STORAGE_KEY, 
+  ARCHIVED_SHIFTS_STORAGE_KEY,
+  CURRENT_SHIFT_ID_SESSION_KEY, // Add session storage key
   ensureShiftArrays 
 } from './shiftCore'
 
@@ -35,16 +36,42 @@ export async function loadShiftData(): Promise<boolean> {
 }
 
 /**
- * Load current shift from database with localStorage fallback
+ * Load current shift from database with localStorage fallback and session persistence
  */
 export async function loadCurrentShift(): Promise<boolean> {
   try {
-    // First try to load from Supabase
+    // First check if we have a shift ID in sessionStorage (for page refreshes)
+    const sessionShiftId = sessionStorage.getItem(CURRENT_SHIFT_ID_SESSION_KEY)
+    
+    if (sessionShiftId) {
+      console.log('Found shift ID in session storage, attempting to load shift:', sessionShiftId)
+      
+      try {
+        // Try to load the shift by ID from database
+        const shift = await db.getShift(sessionShiftId)
+        
+        if (shift) {
+          currentShift.value = ensureShiftArrays(shift)
+          console.log('Loaded current shift from database using session ID:', shift)
+          return true
+        } else {
+          console.warn('Shift ID from session not found in database:', sessionShiftId)
+        }
+      } catch (dbErr) {
+        console.warn('Error loading shift from database using session ID, checking localStorage:', dbErr)
+      }
+    }
+    
+    // Next try to load the active shift from database
     try {
       const shift = await db.getCurrentShift()
       
       if (shift) {
         currentShift.value = ensureShiftArrays(shift)
+        // Save the ID to session storage for page refresh persistence
+        if (shift.id) {
+          sessionStorage.setItem(CURRENT_SHIFT_ID_SESSION_KEY, shift.id)
+        }
         console.log('Loaded current shift from database:', shift)
         return true
       }
@@ -59,6 +86,12 @@ export async function loadCurrentShift(): Promise<boolean> {
       try {
         const parsedShift = JSON.parse(storedShift) as Shift
         currentShift.value = ensureShiftArrays(parsedShift)
+        
+        // Save the ID to session storage for page refresh persistence
+        if (parsedShift.id) {
+          sessionStorage.setItem(CURRENT_SHIFT_ID_SESSION_KEY, parsedShift.id)
+        }
+        
         console.log('Loaded current shift from localStorage:', parsedShift)
         return true
       } catch (parseErr) {
@@ -69,6 +102,7 @@ export async function loadCurrentShift(): Promise<boolean> {
     // No current shift found
     console.log('No current shift found in database or localStorage')
     currentShift.value = null
+    sessionStorage.removeItem(CURRENT_SHIFT_ID_SESSION_KEY)
     
     return true
   } catch (err) {
@@ -125,12 +159,20 @@ export async function getShift(shiftId: string): Promise<Shift | null> {
   const cached = archivedShifts.value.find(s => s.id === shiftId)
   if (cached) return cached
   
+  // Check if it's the current shift
+  if (currentShift.value && currentShift.value.id === shiftId) {
+    return currentShift.value
+  }
+  
   isLoading.value = true
   
   try {
     // Get the shift from database
     const shift = await db.getShift(shiftId)
-    return shift
+    if (shift) {
+      return ensureShiftArrays(shift)
+    }
+    return null
   } catch (err) {
     console.error(`Error loading shift ${shiftId} from database:`, err)
     
@@ -146,7 +188,7 @@ export async function getShift(shiftId: string): Promise<Shift | null> {
       }
       
       const data = await response.json()
-      return data as Shift
+      return ensureShiftArrays(data as Shift)
     } catch (fileErr) {
       console.error(`Error loading shift ${shiftId} from file:`, fileErr)
       return null

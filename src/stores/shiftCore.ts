@@ -10,6 +10,8 @@ export const error = ref<string | null>(null)
 // LocalStorage keys for fallback
 export const CURRENT_SHIFT_STORAGE_KEY = 'porter-track-current-shift'
 export const ARCHIVED_SHIFTS_STORAGE_KEY = 'porter-track-archived-shifts'
+// Add session storage key for persistent shift ID
+export const CURRENT_SHIFT_ID_SESSION_KEY = 'porter-track-current-shift-id'
 
 // Computed values
 export const isShiftActive = computed(() => !!currentShift.value)
@@ -47,6 +49,8 @@ export const currentPorterAssignments = computed(() => {
 export function saveCurrentShiftToLocalStorage() {
   if (currentShift.value) {
     localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(currentShift.value))
+    // Also save the shift ID in sessionStorage for persistent session across refreshes
+    sessionStorage.setItem(CURRENT_SHIFT_ID_SESSION_KEY, currentShift.value.id)
   }
 }
 
@@ -56,6 +60,18 @@ export function saveArchivedShiftsToLocalStorage() {
 
 export function clearCurrentShiftFromLocalStorage() {
   localStorage.removeItem(CURRENT_SHIFT_STORAGE_KEY)
+  sessionStorage.removeItem(CURRENT_SHIFT_ID_SESSION_KEY)
+}
+
+// Force a UI update (used when updating task status to refresh computed properties)
+export function forceShiftUpdate() {
+  if (currentShift.value) {
+    // Create a shallow copy of tasks to trigger reactivity
+    currentShift.value = {
+      ...currentShift.value,
+      tasks: [...currentShift.value.tasks]
+    }
+  }
 }
 
 // Helper to ensure arrays exist on the shift object
