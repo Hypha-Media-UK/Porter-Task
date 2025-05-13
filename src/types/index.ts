@@ -19,12 +19,9 @@ export interface JobCategoriesMap {
 export interface JobCategoryDefault {
   category: string;
   itemType?: string; // Optional specific item type within the category
-  fromBuildingId?: string;
-  fromLocationId?: string;
-  fromLocationType?: 'department' | 'ward';
-  toBuildingId?: string;
-  toLocationId?: string;
-  toLocationType?: 'department' | 'ward';
+  buildingId: string;
+  locationId: string;
+  locationType?: 'department' | 'ward';
 }
 
 // Shift schedule types
@@ -39,12 +36,12 @@ export interface ShiftSchedule {
 }
 
 export interface SettingsData {
-  supervisors?: Supervisor[];
-  porters?: Porter[];
-  jobCategories?: JobCategoriesMap;
-  jobCategoryDefaults?: JobCategoryDefault[];
-  shifts?: ShiftSchedule;
-  designationDepartments?: DesignationDepartment[];
+  supervisors: Supervisor[];
+  porters: Porter[];
+  jobCategories: JobCategoriesMap;
+  jobCategoryDefaults: JobCategoryDefault[];
+  shifts: ShiftSchedule;
+  designationDepartments: DesignationDepartment[];
   [key: string]: any;
 }
 
@@ -60,14 +57,94 @@ export interface Building {
   id: string;
   name: string;
   departments: LocationItem[];
-  wards: LocationItem[];
 }
 
 export interface Location {
   building: string; // Building ID
-  locationId: string; // Department or Ward ID
-  locationType: 'department' | 'ward';
+  locationId: string; // Department ID
   displayName: string; // Full display name
+}
+
+// Supabase table types
+export interface SupabaseBuilding {
+  id: string;
+  name: string;
+  created_at?: string;
+}
+
+export interface SupabaseDepartment {
+  id: string;
+  building_id: string;
+  name: string;
+  created_at?: string;
+}
+
+export interface SupabaseJobCategory {
+  id: string;
+  category: string;
+  item_type: string | null;
+  created_at?: string;
+}
+
+export interface SupabaseJobCategoryDefault {
+  id: string;
+  category: string;
+  item_type: string | null;
+  building_id: string;
+  location_id: string;
+  created_at?: string;
+}
+
+export interface SupabaseDesignationDepartment {
+  id: string;
+  name: string;
+  color: string;
+  created_at?: string;
+}
+
+export interface SupabaseShift {
+  id: string;
+  date: string;
+  type: ShiftType;
+  supervisor: string;
+  start_time: string;
+  end_time: string | null;
+  created_at?: string;
+}
+
+export interface SupabaseTask {
+  id: string;
+  shift_id: string;
+  received_time: string;
+  allocated_time: string;
+  completed_time: string | null;
+  status: TaskStatus;
+  job_category: string;
+  item_type: string;
+  from_building: string;
+  from_location_id: string;
+  to_building: string;
+  to_location_id: string;
+  allocated_staff: string | null;
+  created_at?: string;
+}
+
+export interface SupabasePorterAssignment {
+  id: string;
+  shift_id: string;
+  porter_id: string;
+  department_id: string;
+  start_time: string;
+  end_time: string | null;
+  notes: string | null;
+  created_at?: string;
+}
+
+export interface SupabaseShiftAssignedPorter {
+  id: string;
+  shift_id: string;
+  porter_id: string;
+  created_at?: string;
 }
 
 // Task interface
@@ -101,7 +178,7 @@ export interface Shift {
 export interface DesignationDepartment {
   id: string;
   name: string;
-  color?: string; // Color code for UI display
+  color: string; // Color code for UI display
 }
 
 // Time-based porter assignment to a department

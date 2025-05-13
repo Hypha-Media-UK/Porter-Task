@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { JobCategoriesMap, SettingsData, Building, LocationsData, Porter, JobCategoryDefault, ShiftSchedule, DesignationDepartment } from '@/types'
 import { saveSettings as apiSaveSettings, saveLocations as apiSaveLocations } from '@/utils/api'
+import * as db from '@/services/database'
 
 /**
  * Store for application settings and location data
@@ -57,33 +58,44 @@ export const useSettingsStore = defineStore('settings', () => {
    */
   async function loadSettings() {
     try {
-      // First try to load from localStorage
-      const localSettings = localStorage.getItem('porterTrackSettings')
-      if (localSettings) {
-        try {
-          const data: SettingsData = JSON.parse(localSettings)
-          // Update state from localStorage
-          updateStateFromData(data)
-          console.log('Settings loaded from localStorage')
-          return true
-        } catch (localErr) {
-          console.warn('Error parsing localStorage settings, falling back to JSON file:', localErr)
+      // Try to load settings from Supabase
+      try {
+        const data = await db.getSettings()
+        // Update state from database
+        updateStateFromData(data)
+        console.log('Settings loaded from database')
+        return true
+      } catch (dbErr) {
+        console.warn('Error loading settings from database, falling back to localStorage:', dbErr)
+        
+        // Fall back to localStorage if database fails
+        const localSettings = localStorage.getItem('porterTrackSettings')
+        if (localSettings) {
+          try {
+            const data: SettingsData = JSON.parse(localSettings)
+            // Update state from localStorage
+            updateStateFromData(data)
+            console.log('Settings loaded from localStorage')
+            return true
+          } catch (localErr) {
+            console.warn('Error parsing localStorage settings, falling back to JSON file:', localErr)
+          }
         }
+        
+        // Fallback to the JSON file
+        const response = await fetch('/data/settings.json')
+        
+        if (!response.ok) {
+          throw new Error(`Failed to load settings: ${response.status} ${response.statusText}`)
+        }
+        
+        const data: SettingsData = await response.json()
+        
+        // Update state from JSON file
+        updateStateFromData(data)
+        
+        return true
       }
-      
-      // Fallback to the JSON file
-      const response = await fetch('/data/settings.json')
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load settings: ${response.status} ${response.statusText}`)
-      }
-      
-      const data: SettingsData = await response.json()
-      
-      // Update state from JSON file
-      updateStateFromData(data)
-      
-      return true
     } catch (err) {
       console.error('Error loading settings:', err)
       error.value = err instanceof Error ? err.message : 'Failed to load settings'
@@ -125,18 +137,44 @@ export const useSettingsStore = defineStore('settings', () => {
    */
   async function loadLocationData() {
     try {
-      const response = await fetch('/data/locations.json')
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load location data: ${response.status} ${response.statusText}`)
+      // Try to load locations from Supabase
+      try {
+        const data = await db.getLocations()
+        // Update state from database
+        buildings.value = data.buildings
+        console.log('Location data loaded from database')
+        return true
+      } catch (dbErr) {
+        console.warn('Error loading locations from database, falling back to localStorage:', dbErr)
+        
+        // Fall back to localStorage if database fails
+        const locationsData = localStorage.getItem('porterTrackLocations')
+        if (locationsData) {
+          try {
+            const data: LocationsData = JSON.parse(locationsData)
+            // Update state from localStorage
+            buildings.value = data.buildings
+            console.log('Location data loaded from localStorage')
+            return true
+          } catch (localErr) {
+            console.warn('Error parsing localStorage locations, falling back to JSON file:', localErr)
+          }
+        }
+        
+        // Fallback to the JSON file
+        const response = await fetch('/data/locations.json')
+        
+        if (!response.ok) {
+          throw new Error(`Failed to load location data: ${response.status} ${response.statusText}`)
+        }
+        
+        const data: LocationsData = await response.json()
+        
+        // Update state
+        buildings.value = data.buildings
+        
+        return true
       }
-      
-      const data: LocationsData = await response.json()
-      
-      // Update state
-      buildings.value = data.buildings
-      
-      return true
     } catch (err) {
       console.error('Error loading location data:', err)
       error.value = err instanceof Error ? err.message : 'Failed to load location data'
@@ -155,15 +193,16 @@ export const useSettingsStore = defineStore('settings', () => {
         porters: porters.value,
         jobCategories: jobCategories.value,
         jobCategoryDefaults: jobCategoryDefaults.value,
-        shifts: shifts.value
+        shifts: shifts.value,
+        designationDepartments: designationDepartments.value
       };
       
       console.log('Saving settings:', settingsData);
       
-      // First try to save to the Netlify function
+      // First try to save to the API
       try {
         const result = await apiSaveSettings(settingsData);
-        console.log('Settings saved via Netlify function:', result);
+        console.log('Settings saved via API:', result);
       } catch (apiErr) {
         console.warn('Could not save settings via API:', apiErr);
         
@@ -197,10 +236,10 @@ export const useSettingsStore = defineStore('settings', () => {
       
       console.log('Saving location data:', locationData);
       
-      // First try to save to the Netlify function
+      // First try to save to the API
       try {
         const result = await apiSaveLocations(locationData);
-        console.log('Location data saved via Netlify function:', result);
+        console.log('Location data saved via API:', result);
       } catch (apiErr) {
         console.warn('Could not save location data via API:', apiErr);
         
@@ -244,6 +283,10 @@ export const useSettingsStore = defineStore('settings', () => {
     
     if (newSettings.shifts !== undefined) {
       shifts.value = newSettings.shifts
+    }
+    
+    if (newSettings.designationDepartments !== undefined) {
+      designationDepartments.value = newSettings.designationDepartments
     }
     
     // Save settings to file
@@ -423,8 +466,8 @@ export const useSettingsStore = defineStore('settings', () => {
     
     if (!building) return undefined
     
-    const locations = locationType === 'department' ? building.departments : building.wards
-    const location = locations.find(l => l.id === locationId)
+    // All locations are now in departments array
+    const location = building.departments.find(l => l.id === locationId)
     
     return location?.name
   }
@@ -447,8 +490,7 @@ export const useSettingsStore = defineStore('settings', () => {
     const newBuilding: Building = {
       id: newId,
       name,
-      departments: [],
-      wards: []
+      departments: []
     }
     
     buildings.value.push(newBuilding)
@@ -586,89 +628,19 @@ export const useSettingsStore = defineStore('settings', () => {
   }
   
   /**
-   * Ward management functions
+   * Ward management functions - now just proxying to department functions
+   * since we don't distinguish between wards and departments anymore
    */
   function addWard(buildingId: string, name: string) {
-    if (!name.trim()) {
-      return false
-    }
-    
-    const building = buildings.value.find(b => b.id === buildingId)
-    if (!building) {
-      return false
-    }
-    
-    // Check if ward with this name already exists in the building
-    if (building.wards.some(w => w.name === name)) {
-      return false
-    }
-    
-    const newId = name.toLowerCase().replace(/\s+/g, '-')
-    
-    // Check if ID already exists in this building
-    if (building.wards.some(w => w.id === newId)) {
-      return false
-    }
-    
-    building.wards.push({
-      id: newId,
-      name
-    })
-    
-    // Save to file
-    console.log('Ward added:', { buildingId, ward: { id: newId, name } })
-    saveLocationDataToFile()
-    
-    return true
+    return addDepartment(buildingId, name)
   }
   
   function updateWard(buildingId: string, wardId: string, newName: string) {
-    if (!newName.trim()) {
-      return false
-    }
-    
-    const building = buildings.value.find(b => b.id === buildingId)
-    if (!building) {
-      return false
-    }
-    
-    const ward = building.wards.find(w => w.id === wardId)
-    if (!ward) {
-      return false
-    }
-    
-    // Check if new name already exists for another ward in this building
-    if (building.wards.some(w => w.name === newName && w.id !== wardId)) {
-      return false
-    }
-    
-    ward.name = newName
-    
-    // Save to file
-    console.log('Ward updated:', { buildingId, ward })
-    saveLocationDataToFile()
-    
-    return true
+    return updateDepartment(buildingId, wardId, newName)
   }
   
   function deleteWard(buildingId: string, wardId: string) {
-    const building = buildings.value.find(b => b.id === buildingId)
-    if (!building) {
-      return false
-    }
-    
-    const index = building.wards.findIndex(w => w.id === wardId)
-    if (index === -1) {
-      return false
-    }
-    
-    building.wards.splice(index, 1)
-    
-    // Save to file
-    console.log('Ward deleted:', { buildingId, wardId })
-    saveLocationDataToFile()
-    
-    return true
+    return deleteDepartment(buildingId, wardId)
   }
   
   /**
@@ -813,6 +785,14 @@ export const useSettingsStore = defineStore('settings', () => {
     return designationDepartments.value.find(d => d.id === departmentId)
   }
   
+  /**
+   * Helper function to get all departments (combining departments and wards arrays)
+   * Added for compatibility with legacy code
+   */
+  function getAllDepartments(building: Building) {
+    return building.departments
+  }
+  
   return {
     // State
     supervisors,
@@ -876,6 +856,9 @@ export const useSettingsStore = defineStore('settings', () => {
     updateDesignationDepartment,
     deleteDesignationDepartment,
     getDesignationDepartment,
+    
+    // Helper methods
+    getAllDepartments,
     
     // Getters
     getBuildingName,

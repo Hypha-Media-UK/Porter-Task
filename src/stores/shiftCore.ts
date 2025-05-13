@@ -1,0 +1,76 @@
+import { ref, computed } from 'vue'
+import type { Shift, Task, PorterAssignment } from '@/types'
+
+// State - exported for use in store modules
+export const currentShift = ref<Shift | null>(null)
+export const archivedShifts = ref<Shift[]>([])
+export const isLoading = ref(false)
+export const error = ref<string | null>(null)
+
+// LocalStorage keys for fallback
+export const CURRENT_SHIFT_STORAGE_KEY = 'porter-track-current-shift'
+export const ARCHIVED_SHIFTS_STORAGE_KEY = 'porter-track-archived-shifts'
+
+// Computed values
+export const isShiftActive = computed(() => !!currentShift.value)
+
+export const pendingTasks = computed(() => {
+  if (!currentShift.value) return []
+  return currentShift.value.tasks.filter(task => task.status === 'Pending')
+})
+
+export const completedTasks = computed(() => {
+  if (!currentShift.value) return []
+  return currentShift.value.tasks.filter(task => task.status === 'Completed')
+})
+
+// Porter assignments computed properties
+export const porterAssignments = computed(() => {
+  if (!currentShift.value || !currentShift.value.porterAssignments) return []
+  return currentShift.value.porterAssignments
+})
+
+export const currentPorterAssignments = computed(() => {
+  if (!currentShift.value || !currentShift.value.porterAssignments) return []
+  
+  const now = new Date().toISOString()
+  
+  // Return assignments that are currently active (started and not ended, or ended in future)
+  return currentShift.value.porterAssignments.filter(assignment => {
+    const hasStarted = assignment.startTime <= now
+    const hasNotEnded = !assignment.endTime || assignment.endTime > now
+    return hasStarted && hasNotEnded
+  })
+})
+
+// Utility functions for shift management
+export function saveCurrentShiftToLocalStorage() {
+  if (currentShift.value) {
+    localStorage.setItem(CURRENT_SHIFT_STORAGE_KEY, JSON.stringify(currentShift.value))
+  }
+}
+
+export function saveArchivedShiftsToLocalStorage() {
+  localStorage.setItem(ARCHIVED_SHIFTS_STORAGE_KEY, JSON.stringify(archivedShifts.value))
+}
+
+export function clearCurrentShiftFromLocalStorage() {
+  localStorage.removeItem(CURRENT_SHIFT_STORAGE_KEY)
+}
+
+// Helper to ensure arrays exist on the shift object
+export function ensureShiftArrays(shift: Shift) {
+  if (!shift.assignedPorters) {
+    shift.assignedPorters = []
+  }
+  
+  if (!shift.porterAssignments) {
+    shift.porterAssignments = []
+  }
+  
+  if (!shift.tasks) {
+    shift.tasks = []
+  }
+  
+  return shift
+}

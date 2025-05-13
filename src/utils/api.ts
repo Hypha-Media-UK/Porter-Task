@@ -1,33 +1,24 @@
 /**
- * Utility functions for API calls to Netlify functions
+ * Utility functions for API calls
  */
-
-// API base URL that works both in development and production
-export const API_BASE_URL = '/.netlify/functions';
+import * as db from '../services/database'
+import type { SettingsData, LocationsData } from '@/types'
 
 /**
  * Save settings to the backend
  * @param settingsData The settings data to save
  * @returns Promise with the API response
  */
-export async function saveSettings(settingsData: any): Promise<any> {
+export async function saveSettings(settingsData: SettingsData): Promise<any> {
   try {
-    const response = await fetch(`${API_BASE_URL}/save-settings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(settingsData),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+    await db.saveSettings(settingsData)
+    return { 
+      success: true, 
+      message: 'Settings saved successfully' 
     }
-
-    return await response.json();
   } catch (error) {
-    console.error('Error saving settings:', error);
-    throw error;
+    console.error('Error saving settings:', error)
+    throw error
   }
 }
 
@@ -36,23 +27,37 @@ export async function saveSettings(settingsData: any): Promise<any> {
  * @param locationsData The locations data to save
  * @returns Promise with the API response
  */
-export async function saveLocations(locationsData: any): Promise<any> {
+export async function saveLocations(locationsData: LocationsData): Promise<any> {
   try {
-    const response = await fetch(`${API_BASE_URL}/save-locations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(locationsData),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+    await db.saveLocations(locationsData)
+    return { 
+      success: true, 
+      message: 'Locations saved successfully' 
     }
-
-    return await response.json();
   } catch (error) {
-    console.error('Error saving locations:', error);
-    throw error;
+    console.error('Error saving locations:', error)
+    throw error
+  }
+}
+
+/**
+ * Migrate data from localStorage to Supabase
+ * @returns Promise with the API response
+ */
+export async function migrateData(): Promise<any> {
+  try {
+    const initialized = await db.initializeDatabase()
+    if (!initialized) {
+      throw new Error('Failed to initialize database connection')
+    }
+    
+    const seeded = await db.seedDatabase()
+    return { 
+      success: seeded, 
+      message: seeded ? 'Data migrated successfully' : 'Failed to migrate data'
+    }
+  } catch (error) {
+    console.error('Error migrating data:', error)
+    throw error
   }
 }

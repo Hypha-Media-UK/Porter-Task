@@ -11,31 +11,42 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useShiftStore } from './stores/shift'
 import { useSettingsStore } from './stores/settings'
+import { initializeApp } from './utils/initSupabase'
 import Header from './components/Header.vue'
 
 const router = useRouter()
 const shiftStore = useShiftStore()
 const settingsStore = useSettingsStore()
+const isInitializing = ref(true)
 
 const { loadShiftData, isShiftActive } = shiftStore
 
 onMounted(async () => {
   console.log('App mounted - initializing application...')
   
-  // Initialize settings and location data
-  await settingsStore.initialize()
-  
-  // Initialize shift data
-  await loadShiftData()
-  
-  // If a shift is active, navigate to the tasks screen
-  if (isShiftActive && router.currentRoute.value.name === 'home') {
-    console.log('Active shift detected, navigating to tasks screen')
-    router.push({ name: 'tasks' })
+  try {
+    // Initialize Supabase, ensure tables, and seed data if needed
+    await initializeApp()
+    
+    // Initialize settings and location data
+    await settingsStore.initialize()
+    
+    // Initialize shift data
+    await loadShiftData()
+    
+    // If a shift is active, navigate to the tasks screen
+    if (isShiftActive && router.currentRoute.value.name === 'home') {
+      console.log('Active shift detected, navigating to tasks screen')
+      router.push({ name: 'tasks' })
+    }
+  } catch (error) {
+    console.error('Error initializing application:', error)
+  } finally {
+    isInitializing.value = false
   }
 })
 
