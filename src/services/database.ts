@@ -12,6 +12,7 @@ export * from './settingsService'
 
 // Import the Supabase client for direct access if needed
 import { supabase } from '@/utils/supabase'
+import { checkNeedsMigration } from '@/utils/databaseUtils'
 
 /**
  * Initialize the database by creating necessary tables if they don't exist
@@ -46,17 +47,10 @@ export async function seedDatabase(): Promise<boolean> {
     console.log('Checking if database needs seeding...')
     
     // Check if database already has data
-    const { count, error } = await supabase
-      .from('settings')
-      .select('*', { count: 'exact', head: true })
+    const needsSeeding = await checkNeedsMigration()
     
-    if (error) {
-      console.error('Error checking database:', error)
-      return false
-    }
-    
-    // If there's already data in the settings table, assume the database is seeded
-    if (count !== null && count > 0) {
+    // If there's already data in the key tables, assume the database is seeded
+    if (!needsSeeding) {
       console.log('Database already has data, skipping seed')
       return true
     }

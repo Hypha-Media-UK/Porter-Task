@@ -7,10 +7,9 @@ This directory contains the necessary files to set up a Supabase database for th
 1. Log into the [Supabase Dashboard](https://app.supabase.com)
 2. Open your project (or create a new one if needed)
 3. Go to the SQL Editor section
-4. Copy the contents of `schema.sql` from this directory
-5. Create a new query in the SQL Editor, paste the SQL, and run it
-
-This will create all the required tables and initial data for the application.
+4. Create a new query and run the commands in the following order:
+   - First run `schema.sql` to create all required tables
+   - Then run `seed.sql` to populate the tables with initial data
 
 ## Database Structure
 
@@ -28,6 +27,20 @@ The Porter Task Management app uses the following tables:
 - `tasks`: Tasks within shifts
 - `porter_assignments`: Time-based department assignments for porters
 - `shift_assigned_porters`: Tracks which porters are assigned to which shifts
+
+## Seed Data
+
+The `seed.sql` file populates the database with initial data extracted from the app's previous JSON-based storage:
+
+- 5 supervisors
+- 10 porters
+- 11 buildings
+- 50+ departments across all buildings
+- 16 job categories with their item types
+- Default job category locations
+- Designation departments for porter assignments with predefined colors
+
+The seed file first truncates all tables to ensure a clean start, then populates them with the initial data. This ensures the app will work correctly with the same reference data it had before the migration to Supabase.
 
 ## Row-Level Security (RLS)
 

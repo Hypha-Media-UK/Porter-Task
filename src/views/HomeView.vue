@@ -195,6 +195,9 @@
             <option value="" disabled>Select Supervisor</option>
             <option v-for="sup in supervisors" :key="sup" :value="sup">{{ sup }}</option>
           </select>
+          <div v-if="isDevMode" class="debug-info">
+            <strong>DEBUG:</strong> Available supervisors: {{ supervisors }}
+          </div>
         </div>
         
         <!-- Porter Assignment Section -->
@@ -236,6 +239,10 @@
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div v-if="isDevMode" class="debug-info">
+              <strong>DEBUG:</strong> Available porters: {{ allPorters }}
             </div>
           </div>
         </div>
@@ -378,7 +385,19 @@ const {
   removePorterFromShift
 } = shiftStore
 
-const { supervisors, porters: allPorters } = settingsStore
+// Enable debug mode
+const isDevMode = ref(true)
+
+// Use direct references to the arrays for debugging
+const supervisors = computed(() => {
+  console.log("Getting supervisors:", settingsStore.supervisors)
+  return settingsStore.supervisors
+})
+
+const allPorters = computed(() => {
+  console.log("Getting porters:", settingsStore.porters)
+  return settingsStore.porters
+})
 
 // Local state
 const shiftType = ref<'Day' | 'Night'>('Day')
@@ -418,7 +437,7 @@ const assignedPorters = computed(() => {
 
 const availablePorters = computed(() => {
   // Filter out porters that are already assigned
-  return allPorters.filter(porter => !assignedPorters.value.includes(porter))
+  return allPorters.value.filter(porter => !assignedPorters.value.includes(porter))
 })
 
 // Computed properties for initial porter assignment (before shift starts)
@@ -426,7 +445,7 @@ const availableInitialPorters = computed(() => {
   // Filter out porters that are already in the initialPorters list
   console.log("All porters:", allPorters);
   console.log("Initial porters:", initialPorters.value);
-  return allPorters.filter(porter => !initialPorters.value.includes(porter))
+  return allPorters.value.filter(porter => !initialPorters.value.includes(porter))
 })
 
 // Methods
@@ -536,9 +555,13 @@ onMounted(() => {
   shiftType.value = hour >= 8 && hour < 20 ? 'Day' : 'Night'
   
   // Set default supervisor if available
-  if (supervisors.length > 0) {
-    supervisor.value = supervisors[0]
+  if (supervisors.value.length > 0) {
+    supervisor.value = supervisors.value[0]
   }
+
+  // Log debug info on mount
+  console.log("Mounted HomeView - supervisors:", supervisors.value)
+  console.log("Mounted HomeView - porters:", allPorters.value)
 })
 </script>
 
@@ -741,6 +764,15 @@ p {
 .notification-actions button {
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* Debug Info */
+.debug-info {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: #f5f5f5;
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
 }
 
 @media (min-width: 768px) {

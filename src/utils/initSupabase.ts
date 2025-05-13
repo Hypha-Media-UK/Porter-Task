@@ -1,5 +1,6 @@
 import { initializeSupabase, ensureTablesExist } from './supabase'
 import { initializeDatabase, seedDatabase } from '../services/database'
+import { checkNeedsMigration } from './databaseUtils'
 
 /**
  * Initialize Supabase connection and prepare the database
@@ -30,11 +31,20 @@ export async function initializeApp(): Promise<boolean> {
       return false
     }
     
-    // Step 4: Seed the database if empty
-    const dbSeeded = await seedDatabase()
-    if (!dbSeeded) {
-      console.warn('Database seeding may have failed. App will use fallback data sources.')
-      // Continue anyway as we have fallbacks to localStorage and JSON files
+    // Step 4: Check if the database should be seeded
+    const needsMigration = await checkNeedsMigration()
+    if (needsMigration) {
+      console.log('Database appears empty. Attempting to seed data...')
+      // Step 5: Seed the database if empty
+      const dbSeeded = await seedDatabase()
+      if (!dbSeeded) {
+        console.warn('Database seeding may have failed. App will use fallback data sources.')
+        // Continue anyway as we have fallbacks to localStorage and JSON files
+      } else {
+        console.log('Database seeded successfully!')
+      }
+    } else {
+      console.log('Database already contains data, no need to seed.')
     }
     
     console.log('Application initialized successfully')
@@ -60,18 +70,11 @@ export async function needsMigration(): Promise<boolean> {
       return false
     }
     
-    // Then check if Supabase has data
-    const { data, error, count } = await fetch('/data/settings.json')
-      .then(res => res.json())
-      .catch(() => ({ count: 0 }))
-    
-    if (error) {
-      console.error('Error checking if migration is needed:', error)
-      return false
-    }
+    // Then check if Supabase has data - this needs to query Supabase directly
+    const needsMigration = await checkNeedsMigration()
     
     // If Supabase doesn't have data but localStorage does, migration is needed
-    return count === 0
+    return needsMigration
   } catch (error) {
     console.error('Error checking if migration is needed:', error)
     return false
