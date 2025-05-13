@@ -211,8 +211,9 @@
             Mark as Pending
           </button>
           
-          <!-- Complete Now button -->
+          <!-- Complete Now button - only for new tasks -->
           <button 
+            v-if="!isEditing"
             type="button" 
             class="btn-success" 
             :disabled="!isFormValid || isTaskReceivedBeforeShift || (!isTaskTimingValid && !isFromArchive)"
