@@ -13,6 +13,14 @@
             <div class="shift-supervisor">Supervisor: {{ currentShift.supervisor }}</div>
           </div>
           
+          <!-- Porter Selection for Active Shift -->
+          <PorterSelectionForm
+            :available-porters="availablePorters"
+            :assigned-porters="assignedPorters"
+            @add-porter="handleAddPorterToShift"
+            @remove-porter="handleRemovePorterFromShift"
+          />
+          
           <div class="shift-actions">
             <button class="btn-primary" @click="safeNavigate('tasks')">View Tasks</button>
             <button class="btn-danger" @click="endCurrentShift">End Shift</button>
@@ -36,6 +44,14 @@
               <option v-for="sup in supervisors" :key="sup" :value="sup">{{ sup }}</option>
             </select>
           </div>
+          
+          <!-- Porter Selection Before Shift Starts -->
+          <PorterSelectionForm
+            :available-porters="allPorters"
+            :assigned-porters="initialPorters"
+            @add-porter="handleAddInitialPorter"
+            @remove-porter="handleRemoveInitialPorter"
+          />
           
           <div class="shift-actions">
             <button 
@@ -66,6 +82,7 @@ import { useSettingsStore } from '../stores/settings'
 import { formatDate, formatTime } from '../utils/date'
 import type { RouteParams, ShiftType } from '../types'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
+import PorterSelectionForm from '../components/porter/PorterSelectionForm.vue'
 
 // Router injection
 const navigate = inject<(route: string, params?: RouteParams) => void>('navigate')
@@ -86,15 +103,21 @@ const {
   currentShift,
   startShift,
   endShift,
+  addPorterToShift,
+  removePorterFromShift,
   loadShiftData
 } = shiftStore
 
 // Loading state
 const isLoading = ref(true)
 
-// Supervisors list
+// Supervisors and porters lists
 const supervisors = computed(() => {
   return settingsStore.supervisors
+})
+
+const allPorters = computed(() => {
+  return settingsStore.porters
 })
 
 // Local state
@@ -109,18 +132,75 @@ const shiftTitle = computed(() => {
   return `${formatDate(date)}`
 })
 
+// Porter management for active shift
+const assignedPorters = computed(() => {
+  if (!currentShift.value || !currentShift.value.assignedPorters) return []
+  return currentShift.value.assignedPorters
+})
+
+const availablePorters = computed(() => {
+  // Filter out porters that are already assigned
+  return allPorters.value.filter(porter => !assignedPorters.value.includes(porter))
+})
+
 // Methods
 const startSpecificShift = async (type: ShiftType) => {
   try {
     if (!supervisor.value) return
     
     // Start the shift with the supervisor
-    await startShift(type, supervisor.value)
+    const newShift = await startShift(type, supervisor.value)
+    
+    // Add any porters that were pre-selected
+    if (initialPorters.value && initialPorters.value.length > 0) {      
+      // Add each porter to the shift
+      for (const porter of initialPorters.value) {
+        try {
+          await addPorterToShift(porter)
+        } catch (err) {
+          console.error(`Error adding porter ${porter}:`, err)
+        }
+      }
+      
+      // Clear the initial porters list
+      initialPorters.value = []
+    }
     
     // Navigate to the tasks view
     safeNavigate('tasks')
   } catch (error) {
     console.error('Error starting shift:', error)
+  }
+}
+
+// Initial porter assignment (before shift starts)
+const handleAddInitialPorter = (porter: string) => {
+  if (!initialPorters.value.includes(porter)) {
+    initialPorters.value.push(porter)
+  }
+}
+
+const handleRemoveInitialPorter = (porter: string) => {
+  const index = initialPorters.value.indexOf(porter)
+  if (index !== -1) {
+    initialPorters.value.splice(index, 1)
+  }
+}
+
+// Porter assignment during shift
+const handleAddPorterToShift = async (porter: string) => {
+  try {
+    await addPorterToShift(porter)
+  } catch (error) {
+    console.error('Error adding porter to shift:', error)
+  }
+}
+
+const handleRemovePorterFromShift = async (porter: string) => {
+  try {
+    await removePorterFromShift(porter)
+  } catch (error) {
+    console.error('Error removing porter from shift:', error)
   }
 }
 
