@@ -1,6 +1,7 @@
 import { supabase } from '@/utils/supabase'
 import type { Task, SupabaseTask, Location } from '@/types'
 import { nanoid } from 'nanoid'
+import { populateLocationDisplayNames } from '@/utils/locationUtils'
 
 // Transform app task to Supabase format
 export function transformTaskToSupabase(task: Task, shiftId: string): SupabaseTask {
@@ -23,7 +24,7 @@ export function transformTaskToSupabase(task: Task, shiftId: string): SupabaseTa
 
 // Transform Supabase task to app format
 export function transformTaskFromSupabase(data: any): Task {
-  return {
+  const task = {
     id: data.id,
     receivedTime: data.received_time,
     allocatedTime: data.allocated_time,
@@ -35,13 +36,21 @@ export function transformTaskFromSupabase(data: any): Task {
     fromLocation: {
       building: data.from_building,
       locationId: data.from_location_id,
-      displayName: '' // This will be filled in by the UI
+      displayName: '' // Will be populated by populateLocationDisplayNames
     },
     toLocation: {
       building: data.to_building,
       locationId: data.to_location_id,
-      displayName: '' // This will be filled in by the UI
+      displayName: '' // Will be populated by populateLocationDisplayNames
     }
+  }
+  
+  // Populate location display names using the settings store
+  try {
+    return populateLocationDisplayNames(task)
+  } catch (error) {
+    console.warn('Could not populate location display names:', error)
+    return task
   }
 }
 

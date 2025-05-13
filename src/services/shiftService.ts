@@ -1,6 +1,7 @@
 import { supabase } from '@/utils/supabase'
 import type { Shift, SupabaseShift, SupabaseShiftAssignedPorter } from '@/types'
 import { nanoid } from 'nanoid'
+import { populateTasksLocationDisplayNames } from '@/utils/locationUtils'
 
 // Transform Supabase shift to app shift
 export function transformShiftFromSupabase(data: any): Shift | null {
@@ -20,7 +21,8 @@ export function transformShiftFromSupabase(data: any): Shift | null {
 
   // Transform tasks if included
   if (data.tasks && Array.isArray(data.tasks)) {
-    transformedShift.tasks = data.tasks.map((task: any) => ({
+    // First transform the tasks with empty display names
+    const tasksWithoutDisplayNames = data.tasks.map((task: any) => ({
       id: task.id,
       receivedTime: task.received_time,
       allocatedTime: task.allocated_time,
@@ -32,14 +34,22 @@ export function transformShiftFromSupabase(data: any): Shift | null {
       fromLocation: {
         building: task.from_building,
         locationId: task.from_location_id,
-        displayName: '' // This will be filled in by the UI
+        displayName: '' // Will be populated by populateTasksLocationDisplayNames
       },
       toLocation: {
         building: task.to_building,
         locationId: task.to_location_id,
-        displayName: '' // This will be filled in by the UI
+        displayName: '' // Will be populated by populateTasksLocationDisplayNames
       }
     }))
+    
+    // Populate the display names for all tasks
+    try {
+      transformedShift.tasks = populateTasksLocationDisplayNames(tasksWithoutDisplayNames)
+    } catch (error) {
+      console.warn('Could not populate location display names for tasks:', error)
+      transformedShift.tasks = tasksWithoutDisplayNames
+    }
   }
 
   // Transform assigned porters if included

@@ -534,15 +534,43 @@ const allLocations = computed(() => {
   return [...frequentLocations, ...standardLocations];
 });
 
-// Find location by building and ID
+// Find location by building and ID with improved debugging and fallback
 const findLocationById = (buildingId: string, locationId: string, locationType: 'department' | 'ward'): CombinedLocation | undefined => {
+  console.log(`Finding location - buildingId: ${buildingId}, locationId: ${locationId}, type: ${locationType}`);
+  
+  if (!buildingId || !locationId) {
+    console.warn('Missing buildingId or locationId, cannot find location');
+    return undefined;
+  }
+  
+  // Find the building
   const building = buildings.find(b => b.id === buildingId);
-  if (!building) return undefined;
+  if (!building) {
+    console.warn(`Building with ID ${buildingId} not found`);
+    
+    // Try to find the location in any building as a fallback
+    for (const b of buildings) {
+      const location = b.departments.find(d => d.id === locationId);
+      if (location) {
+        console.log(`Found location ${location.name} in different building ${b.name}`);
+        return {
+          id: location.id,
+          name: location.name,
+          buildingId: b.id,
+          buildingName: b.name,
+          locationType: 'department'
+        };
+      }
+    }
+    
+    return undefined;
+  }
   
   // In our Supabase model, all locations are in the departments array
   const location = building.departments.find(l => l.id === locationId);
   
   if (location) {
+    console.log(`Found location ${location.name} in building ${building.name}`);
     return {
       id: location.id,
       name: location.name,
@@ -552,6 +580,7 @@ const findLocationById = (buildingId: string, locationId: string, locationType: 
     };
   }
   
+  console.warn(`Location with ID ${locationId} not found in building ${building.name}`);
   return undefined;
 };
 
@@ -562,6 +591,8 @@ const loadTask = () => {
   const task = getTask(props.taskId);
   
   if (task) {
+    console.log('Loading task:', task);
+    
     // If we found the task but haven't identified it's from archive yet,
     // check to see if it belongs to an archived shift
     if (!isFromArchive.value) {
@@ -602,20 +633,75 @@ const loadTask = () => {
       status: task.status
     };
     
+    console.log('Task from location:', task.fromLocation);
+    console.log('Task to location:', task.toLocation);
+    
     // Find and set selected locations
     const fromLoc = findLocationById(
       task.fromLocation.building, 
       task.fromLocation.locationId, 
       task.fromLocation.locationType
     );
-    if (fromLoc) selectedFromLocation.value = fromLoc;
+    
+    if (fromLoc) {
+      console.log('Found fromLocation match:', fromLoc);
+      selectedFromLocation.value = fromLoc;
+    } else {
+      console.warn('Could not find fromLocation match in buildings');
+      
+      // Fallback: Find a location by display name
+      if (task.fromLocation.displayName) {
+        const matchByName = allLocations.value.find(
+          loc => loc.name === task.fromLocation.displayName
+        );
+        
+        if (matchByName) {
+          console.log('Found fromLocation by name:', matchByName);
+          selectedFromLocation.value = matchByName;
+          
+          // Update the formData with the correct building and locationId
+          formData.value.fromLocation = {
+            building: matchByName.buildingId,
+            locationId: matchByName.id,
+            locationType: matchByName.locationType,
+            displayName: matchByName.name
+          };
+        }
+      }
+    }
     
     const toLoc = findLocationById(
       task.toLocation.building, 
       task.toLocation.locationId, 
       task.toLocation.locationType
     );
-    if (toLoc) selectedToLocation.value = toLoc;
+    
+    if (toLoc) {
+      console.log('Found toLocation match:', toLoc);
+      selectedToLocation.value = toLoc;
+    } else {
+      console.warn('Could not find toLocation match in buildings');
+      
+      // Fallback: Find a location by display name
+      if (task.toLocation.displayName) {
+        const matchByName = allLocations.value.find(
+          loc => loc.name === task.toLocation.displayName
+        );
+        
+        if (matchByName) {
+          console.log('Found toLocation by name:', matchByName);
+          selectedToLocation.value = matchByName;
+          
+          // Update the formData with the correct building and locationId
+          formData.value.toLocation = {
+            building: matchByName.buildingId,
+            locationId: matchByName.id,
+            locationType: matchByName.locationType,
+            displayName: matchByName.name
+          };
+        }
+      }
+    }
   } else {
     // Task not found, go back to tasks view
     if (navigate) navigate('tasks');
