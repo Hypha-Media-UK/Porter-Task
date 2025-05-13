@@ -493,8 +493,9 @@ const allLocations = computed(() => {
   const standardLocations: CombinedLocation[] = [];
   
   buildings.forEach(building => {
-    // Add departments
+    // Add departments - in our Supabase model, departments include all locations
     building.departments.forEach(dept => {
+      // In the new model, we just have departments (no separate wards)
       const location = {
         id: dept.id,
         name: dept.name,
@@ -506,25 +507,6 @@ const allLocations = computed(() => {
       };
       
       if (dept.frequent) {
-        frequentLocations.push(location);
-      } else {
-        standardLocations.push(location);
-      }
-    });
-    
-    // Add wards
-    building.wards.forEach(ward => {
-      const location = {
-        id: ward.id,
-        name: ward.name,
-        buildingId: building.id,
-        buildingName: building.name,
-        locationType: 'ward' as const,
-        frequent: ward.frequent,
-        order: ward.order
-      };
-      
-      if (ward.frequent) {
         frequentLocations.push(location);
       } else {
         standardLocations.push(location);
@@ -557,8 +539,8 @@ const findLocationById = (buildingId: string, locationId: string, locationType: 
   const building = buildings.find(b => b.id === buildingId);
   if (!building) return undefined;
   
-  const locations = locationType === 'department' ? building.departments : building.wards;
-  const location = locations.find(l => l.id === locationId);
+  // In our Supabase model, all locations are in the departments array
+  const location = building.departments.find(l => l.id === locationId);
   
   if (location) {
     return {
@@ -566,7 +548,7 @@ const findLocationById = (buildingId: string, locationId: string, locationType: 
       name: location.name,
       buildingId: building.id,
       buildingName: building.name,
-      locationType: locationType
+      locationType: 'department' // We now use 'department' for all location types
     };
   }
   
@@ -758,17 +740,16 @@ const applyLocationDefaults = (defaults: JobCategoryDefault | undefined) => {
   if (!defaults) return;
   
   // Set from location
-  if (defaults.fromBuildingId && defaults.fromLocationType) {
+  if (defaults.fromBuildingId) {
     const fromBuildingId = defaults.fromBuildingId;
-    const fromLocationType = defaults.fromLocationType;
     
     // Only set if we have a valid building
     const building = buildings.find(b => b.id === fromBuildingId);
     if (building) {
       // If we have a locationId, try to find the exact location
       if (defaults.fromLocationId) {
-        const locations = fromLocationType === 'department' ? building.departments : building.wards;
-        const location = locations.find(l => l.id === defaults.fromLocationId);
+        // In our Supabase model, all locations are in the departments array
+        const location = building.departments.find(l => l.id === defaults.fromLocationId);
         
         if (location) {
           const defaultFromLoc = {
@@ -776,7 +757,7 @@ const applyLocationDefaults = (defaults: JobCategoryDefault | undefined) => {
             name: location.name,
             buildingId: building.id,
             buildingName: building.name,
-            locationType: fromLocationType
+            locationType: 'department' // We now use 'department' for all location types
           };
           selectedFromLocation.value = defaultFromLoc;
         }
@@ -785,17 +766,16 @@ const applyLocationDefaults = (defaults: JobCategoryDefault | undefined) => {
   }
   
   // Set to location
-  if (defaults.toBuildingId && defaults.toLocationType) {
+  if (defaults.toBuildingId) {
     const toBuildingId = defaults.toBuildingId;
-    const toLocationType = defaults.toLocationType;
     
     // Only set if we have a valid building
     const building = buildings.find(b => b.id === toBuildingId);
     if (building) {
       // If we have a locationId, try to find the exact location
       if (defaults.toLocationId) {
-        const locations = toLocationType === 'department' ? building.departments : building.wards;
-        const location = locations.find(l => l.id === defaults.toLocationId);
+        // In our Supabase model, all locations are in the departments array
+        const location = building.departments.find(l => l.id === defaults.toLocationId);
         
         if (location) {
           const defaultToLoc = {
@@ -803,7 +783,7 @@ const applyLocationDefaults = (defaults: JobCategoryDefault | undefined) => {
             name: location.name,
             buildingId: building.id,
             buildingName: building.name,
-            locationType: toLocationType
+            locationType: 'department' // We now use 'department' for all location types
           };
           selectedToLocation.value = defaultToLoc;
         }
