@@ -74,6 +74,7 @@
                 id="fromLocationId"
                 v-model="selectedFromLocation"
                 class="form-control"
+                ref="fromLocationSelect"
                 required
               >
                 <option value="" disabled>Select location</option>
@@ -85,6 +86,10 @@
               <div v-if="selectedFromLocation" class="building-info">
                 Building: {{ selectedFromLocation.buildingName }}
               </div>
+              <div v-else-if="formData.fromLocation.displayName" class="building-info is-saved">
+                Building and department data saved but not in select options.
+                <strong>{{ formData.fromLocation.displayName }}</strong>
+              </div>
             </div>
             
             <div class="form-group to-section">
@@ -93,6 +98,7 @@
                 id="toLocationId"
                 v-model="selectedToLocation"
                 class="form-control"
+                ref="toLocationSelect"
                 required
               >
                 <option value="" disabled>Select location</option>
@@ -103,6 +109,10 @@
               
               <div v-if="selectedToLocation" class="building-info">
                 Building: {{ selectedToLocation.buildingName }}
+              </div>
+              <div v-else-if="formData.toLocation.displayName" class="building-info is-saved">
+                Building and department data saved but not in select options.
+                <strong>{{ formData.toLocation.displayName }}</strong>
               </div>
             </div>
           </div>
@@ -217,10 +227,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, inject, watch } from 'vue';
+import { ref, computed, onMounted, inject, watch, nextTick } from 'vue';
 import { useShiftStore } from '../stores/shift';
 import { useSettingsStore } from '../stores/settings';
 import type { Task, Location, RouteParams, JobCategoryDefault } from '../types';
+import { CombinedLocation, processTaskLocations } from '../utils/locationSelectionUtils';
 import '../assets/css/taskForm.css';
 
 // Props
@@ -287,6 +298,13 @@ const isEditing = computed(() => !!props.taskId);
 const isFromArchive = ref(false);
 const currentShiftId = ref<string | null>(null);
 
+// Refs for select elements for direct DOM manipulation if needed
+const fromLocationSelect = ref<HTMLSelectElement | null>(null);
+const toLocationSelect = ref<HTMLSelectElement | null>(null);
+
+// Flag to track if this is the initial load
+const isInitialLoad = ref(true);
+
 // Determine the context we're editing from
 const checkReferrer = () => {
   // First check the URL for archive context
@@ -331,17 +349,6 @@ const getTimeMinutesFromNow = (minutes: number) => {
   now.setMinutes(now.getMinutes() + minutes);
   return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 };
-
-// Combined location type including building info
-interface CombinedLocation {
-  id: string;
-  name: string;
-  buildingId: string;
-  buildingName: string;
-  locationType: 'department' | 'ward';
-  frequent?: boolean;
-  order?: number;
-}
 
 // Selected locations
 const selectedFromLocation = ref<CombinedLocation | null>(null);
@@ -472,8 +479,8 @@ const isFormValid = computed(() => {
   return (
     formData.value.jobCategory &&
     formData.value.itemType &&
-    selectedFromLocation.value !== null &&
-    selectedToLocation.value !== null
+    (selectedFromLocation.value !== null || formData.value.fromLocation.displayName) &&
+    (selectedToLocation.value !== null || formData.value.toLocation.displayName)
   );
 });
 
@@ -534,56 +541,7 @@ const allLocations = computed(() => {
   return [...frequentLocations, ...standardLocations];
 });
 
-// Find location by building and ID with improved debugging and fallback
-const findLocationById = (buildingId: string, locationId: string, locationType: 'department' | 'ward'): CombinedLocation | undefined => {
-  console.log(`Finding location - buildingId: ${buildingId}, locationId: ${locationId}, type: ${locationType}`);
-  
-  if (!buildingId || !locationId) {
-    console.warn('Missing buildingId or locationId, cannot find location');
-    return undefined;
-  }
-  
-  // Find the building
-  const building = buildings.find(b => b.id === buildingId);
-  if (!building) {
-    console.warn(`Building with ID ${buildingId} not found`);
-    
-    // Try to find the location in any building as a fallback
-    for (const b of buildings) {
-      const location = b.departments.find(d => d.id === locationId);
-      if (location) {
-        console.log(`Found location ${location.name} in different building ${b.name}`);
-        return {
-          id: location.id,
-          name: location.name,
-          buildingId: b.id,
-          buildingName: b.name,
-          locationType: 'department'
-        };
-      }
-    }
-    
-    return undefined;
-  }
-  
-  // In our Supabase model, all locations are in the departments array
-  const location = building.departments.find(l => l.id === locationId);
-  
-  if (location) {
-    console.log(`Found location ${location.name} in building ${building.name}`);
-    return {
-      id: location.id,
-      name: location.name,
-      buildingId: building.id,
-      buildingName: building.name,
-      locationType: 'department' // We now use 'department' for all location types
-    };
-  }
-  
-  console.warn(`Location with ID ${locationId} not found in building ${building.name}`);
-  return undefined;
-};
-
+// Load and populate task data
 const loadTask = () => {
   if (!props.taskId) return;
   
@@ -591,7 +549,7 @@ const loadTask = () => {
   const task = getTask(props.taskId);
   
   if (task) {
-    console.log('Loading task:', task);
+    console.log('Loading task for editing:', task);
     
     // If we found the task but haven't identified it's from archive yet,
     // check to see if it belongs to an archived shift
@@ -636,289 +594,100 @@ const loadTask = () => {
     console.log('Task from location:', task.fromLocation);
     console.log('Task to location:', task.toLocation);
     
-    // Find and set selected locations
-    const fromLoc = findLocationById(
-      task.fromLocation.building, 
-      task.fromLocation.locationId, 
-      task.fromLocation.locationType
-    );
+    // Set location selections using enhanced location finder from our utility file
+    // Wait for next tick to ensure the component is rendered and refs are available
+    nextTick(() => {
+      processTaskLocations(
+        task,
+        buildings,
+        allLocations.value,
+        fromLocationSelect,
+        toLocationSelect,
+        (loc) => { selectedFromLocation.value = loc; },
+        (loc) => { selectedToLocation.value = loc; }
+      );
+    });
+  }
+};
+
+// Actions for buttons
+const saveTask = async (status: 'Pending' | 'Completed') => {
+  try {
+    // Set task status
+    formData.value.status = status;
     
-    if (fromLoc) {
-      console.log('Found fromLocation match:', fromLoc);
-      selectedFromLocation.value = fromLoc;
-    } else {
-      console.warn('Could not find fromLocation match in buildings');
-      
-      // Fallback: Find a location by display name
-      if (task.fromLocation.displayName) {
-        const matchByName = allLocations.value.find(
-          loc => loc.name === task.fromLocation.displayName
-        );
-        
-        if (matchByName) {
-          console.log('Found fromLocation by name:', matchByName);
-          selectedFromLocation.value = matchByName;
-          
-          // Update the formData with the correct building and locationId
-          formData.value.fromLocation = {
-            building: matchByName.buildingId,
-            locationId: matchByName.id,
-            locationType: matchByName.locationType,
-            displayName: matchByName.name
-          };
-        }
-      }
+    // If form is not valid, don't proceed
+    if (!isFormValid.value) {
+      return;
     }
     
-    const toLoc = findLocationById(
-      task.toLocation.building, 
-      task.toLocation.locationId, 
-      task.toLocation.locationType
-    );
+    // Create ISO datetime strings for times
+    const today = new Date().toISOString().substring(0, 10); // YYYY-MM-DD
     
-    if (toLoc) {
-      console.log('Found toLocation match:', toLoc);
-      selectedToLocation.value = toLoc;
+    const taskData = {
+      ...formData.value,
+      receivedTime: `${today}T${formData.value.receivedTime}:00`,
+      allocatedTime: `${today}T${formData.value.allocatedTime}:00`,
+      completedTime: status === 'Completed' 
+        ? `${today}T${formData.value.completedTime}:00` 
+        : undefined,
+    };
+    
+    // Update or create the task
+    if (isEditing.value) {
+      await updateTask(props.taskId as string, taskData);
+      console.log('Task updated successfully');
     } else {
-      console.warn('Could not find toLocation match in buildings');
-      
-      // Fallback: Find a location by display name
-      if (task.toLocation.displayName) {
-        const matchByName = allLocations.value.find(
-          loc => loc.name === task.toLocation.displayName
-        );
-        
-        if (matchByName) {
-          console.log('Found toLocation by name:', matchByName);
-          selectedToLocation.value = matchByName;
-          
-          // Update the formData with the correct building and locationId
-          formData.value.toLocation = {
-            building: matchByName.buildingId,
-            locationId: matchByName.id,
-            locationType: matchByName.locationType,
-            displayName: matchByName.name
-          };
-        }
-      }
+      await createTask(taskData);
+      console.log('Task created successfully');
     }
-  } else {
-    // Task not found, go back to tasks view
-    if (navigate) navigate('tasks');
-  }
-};
-
-const navigateAfterSave = () => {
-  // If editing from archive, return to shift detail view
-  if (isFromArchive.value && currentShiftId.value) {
-    if (navigate) navigate('shiftDetail', { shiftId: currentShiftId.value });
-  } else {
-    // Otherwise, go to tasks view
-    if (navigate) navigate('tasks');
-  }
-};
-
-const saveTask = (status: 'Pending' | 'Completed' = 'Pending') => {
-  if (!isFormValid.value) return;
-  
-  // Convert time inputs (HH:MM) to ISO strings
-  const now = new Date();
-  const [receivedHours, receivedMinutes] = formData.value.receivedTime.split(':').map(Number);
-  const [allocatedHours, allocatedMinutes] = formData.value.allocatedTime.split(':').map(Number);
-  
-  // Create date objects for the times
-  const receivedDate = new Date(now);
-  receivedDate.setHours(receivedHours, receivedMinutes, 0, 0);
-  
-  const allocatedDate = new Date(now);
-  allocatedDate.setHours(allocatedHours, allocatedMinutes, 0, 0);
-  
-  // For completed time, only set if task is completed
-  let completedDate: Date | undefined;
-  if (status === 'Completed' && formData.value.completedTime) {
-    const [completedHours, completedMinutes] = formData.value.completedTime.split(':').map(Number);
-    completedDate = new Date(now);
-    completedDate.setHours(completedHours, completedMinutes, 0, 0);
-  }
-  
-  // Prepare task data with specified status and ISO string times
-  const taskData = {
-    jobCategory: formData.value.jobCategory,
-    itemType: formData.value.itemType,
-    fromLocation: formData.value.fromLocation,
-    toLocation: formData.value.toLocation,
-    allocatedStaff: formData.value.allocatedStaff,
-    receivedTime: receivedDate.toISOString(),
-    allocatedTime: allocatedDate.toISOString(),
-    completedTime: completedDate ? completedDate.toISOString() : undefined,
-    status
-  };
-  
-  if (isEditing.value && props.taskId) {
-    // Update existing task if in edit mode
-    updateTask(props.taskId, taskData);
-  } else {
-    // Create new task if in create mode
-    createTask(taskData);
-  }
-  
-  // Navigate based on context
-  navigateAfterSave();
-};
-
-const handleDeleteTask = () => {
-  if (isEditing.value && props.taskId) {
-    // Delete the task
-    deleteTask(props.taskId);
     
-    // Navigate based on context
-    navigateAfterSave();
+    // Navigate back
+    cancel();
+  } catch (error) {
+    console.error('Error saving task:', error);
+    alert('An error occurred while saving the task. Please try again.');
+  }
+};
+
+const handleDeleteTask = async () => {
+  if (!props.taskId) return;
+  
+  const confirmDelete = confirm('Are you sure you want to delete this task?');
+  if (!confirmDelete) return;
+  
+  try {
+    await deleteTask(props.taskId);
+    console.log('Task deleted successfully');
+    cancel();
+  } catch (error) {
+    console.error('Error deleting task:', error);
+    alert('An error occurred while deleting the task. Please try again.');
   }
 };
 
 const cancel = () => {
-  // Check if we should go back to shift detail view or tasks view
-  if (isFromArchive.value && currentShiftId.value) {
-    if (navigate) navigate('shiftDetail', { shiftId: currentShiftId.value });
-  } else if (window.history && window.history.length > 1) {
+  console.log('Cancelling and navigating back');
+  
+  // Go back to the shift view or the appropriate task view
+  // Use history back or navigate to the correct route
+  if (navigate) {
+    navigate('shift'); // Go back to the shift view
+  } else {
     window.history.back();
-  } else if (navigate) {
-    navigate('tasks');
   }
 };
 
-// Initialize
+// Mount setup
 onMounted(() => {
-  // Check if we're coming from an archive page
+  console.log('Task form mounted with taskId:', props.taskId);
+  
+  // Check referrer for archive context
   checkReferrer();
   
-  // Allow editing even for archived tasks (don't redirect if we're editing)
-  if (!isShiftActive.value && !props.taskId) {
-    if (navigate) navigate('home');
-    return;
-  }
-  
-  // Set default categories if available
-  if (categories.value.length > 0) {
-    formData.value.jobCategory = categories.value[0];
-  }
-  
-  // If we have locations, set defaults
-  if (allLocations.value.length > 0) {
-    // Find a department for "from" location (or use first location)
-    const defaultFromLoc = allLocations.value.find(l => l.locationType === 'department') || allLocations.value[0];
-    selectedFromLocation.value = defaultFromLoc;
-    
-    // Find a ward for "to" location (or use second location, or first if only one exists)
-    const defaultToLoc = allLocations.value.find(l => l.locationType === 'ward') || 
-                         (allLocations.value.length > 1 ? allLocations.value[1] : allLocations.value[0]);
-    selectedToLocation.value = defaultToLoc;
-  }
-  
-  // In edit mode, load task data
-  if (isEditing.value) {
+  // Load existing task if editing
+  if (props.taskId) {
     loadTask();
-  }
-});
-
-// Function to apply location defaults
-const applyLocationDefaults = (defaults: JobCategoryDefault | undefined) => {
-  if (!defaults) return;
-  
-  // Set from location
-  if (defaults.fromBuildingId) {
-    const fromBuildingId = defaults.fromBuildingId;
-    
-    // Only set if we have a valid building
-    const building = buildings.find(b => b.id === fromBuildingId);
-    if (building) {
-      // If we have a locationId, try to find the exact location
-      if (defaults.fromLocationId) {
-        // In our Supabase model, all locations are in the departments array
-        const location = building.departments.find(l => l.id === defaults.fromLocationId);
-        
-        if (location) {
-          const defaultFromLoc = {
-            id: location.id,
-            name: location.name,
-            buildingId: building.id,
-            buildingName: building.name,
-            locationType: 'department' // We now use 'department' for all location types
-          };
-          selectedFromLocation.value = defaultFromLoc;
-        }
-      }
-    }
-  }
-  
-  // Set to location
-  if (defaults.toBuildingId) {
-    const toBuildingId = defaults.toBuildingId;
-    
-    // Only set if we have a valid building
-    const building = buildings.find(b => b.id === toBuildingId);
-    if (building) {
-      // If we have a locationId, try to find the exact location
-      if (defaults.toLocationId) {
-        // In our Supabase model, all locations are in the departments array
-        const location = building.departments.find(l => l.id === defaults.toLocationId);
-        
-        if (location) {
-          const defaultToLoc = {
-            id: location.id,
-            name: location.name,
-            buildingId: building.id,
-            buildingName: building.name,
-            locationType: 'department' // We now use 'department' for all location types
-          };
-          selectedToLocation.value = defaultToLoc;
-        }
-      }
-    }
-  }
-};
-
-// Flag to prevent automatic item type reset during initial load
-const initialJobTypeChange = ref(true);
-
-// Watch for category changes to update item types and default locations
-watch(() => formData.value.jobCategory, () => {
-  // Only reset and set default item type if this isn't the initial load with an existing task
-  if (!initialJobTypeChange.value || !isEditing.value) {
-    // Reset item type when category changes (unless it's during initial load of an existing task)
-    formData.value.itemType = '';
-    
-    // Set default item type if available
-    const items = itemTypesForCategory.value;
-    if (items.length > 0) {
-      formData.value.itemType = items[0];
-    }
-  }
-  
-  // Only apply default locations for new tasks, not when editing
-  if (formData.value.jobCategory && !isEditing.value) {
-    const defaults = settingsStore.getJobCategoryDefault(formData.value.jobCategory);
-    applyLocationDefaults(defaults);
-  }
-  
-  // Turn off the initial load flag after first run
-  initialJobTypeChange.value = false;
-});
-
-// Watch for item type changes to update default locations
-watch(() => formData.value.itemType, () => {
-  // Only proceed if we have both category and item type
-  if (formData.value.jobCategory && formData.value.itemType) {
-    // Try to get defaults specific to this item type
-    const defaults = settingsStore.getJobCategoryDefault(
-      formData.value.jobCategory, 
-      formData.value.itemType
-    );
-    
-    // Apply the defaults if found
-    if (defaults) {
-      applyLocationDefaults(defaults);
-    }
   }
 });
 </script>
