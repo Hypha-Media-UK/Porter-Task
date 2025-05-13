@@ -1,6 +1,5 @@
 <template>
   <main class="home-view">
-    <!-- Loading state -->
     <div v-if="isLoading" class="home-loading">
       <LoadingSpinner message="Loading shift data..." />
     </div>
@@ -8,12 +7,53 @@
     <template v-else>
       <section v-if="isShiftActive && currentShift" class="active-shift">
         <h1>Current Shift</h1>
-        <p>Shift is active.</p>
+        <div class="shift-card">
+          <div class="shift-info">
+            <h2>{{ shiftTitle }}</h2>
+            <div class="shift-supervisor">Supervisor: {{ currentShift.supervisor }}</div>
+          </div>
+          
+          <div class="shift-actions">
+            <button class="btn-primary" @click="safeNavigate('tasks')">View Tasks</button>
+            <button class="btn-danger" @click="endCurrentShift">End Shift</button>
+          </div>
+        </div>
       </section>
       
       <section v-else class="new-shift">
         <h1>Start New Shift</h1>
         <p>Create a new porter shift to start tracking and managing tasks.</p>
+        
+        <div class="shift-form">
+          <div class="form-group">
+            <label for="supervisor">Supervisor</label>
+            <select 
+              id="supervisor" 
+              v-model="supervisor" 
+              class="form-control"
+            >
+              <option value="" disabled>Select Supervisor</option>
+              <option v-for="sup in supervisors" :key="sup" :value="sup">{{ sup }}</option>
+            </select>
+          </div>
+          
+          <div class="shift-actions">
+            <button 
+              class="btn-primary"
+              @click="startSpecificShift('Day')"
+              :disabled="!supervisor"
+            >
+              Start Day Shift
+            </button>
+            <button 
+              class="btn-secondary"
+              @click="startSpecificShift('Night')"
+              :disabled="!supervisor"
+            >
+              Start Night Shift
+            </button>
+          </div>
+        </div>
       </section>
     </template>
   </main>
@@ -24,8 +64,18 @@ import { ref, computed, inject, onMounted } from 'vue'
 import { useShiftStore } from '../stores/shift'
 import { useSettingsStore } from '../stores/settings'
 import { formatDate, formatTime } from '../utils/date'
-import type { RouteParams } from '../types'
+import type { RouteParams, ShiftType } from '../types'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
+
+// Router injection
+const navigate = inject<(route: string, params?: RouteParams) => void>('navigate')
+
+// Safe navigation wrapper
+const safeNavigate = (route: string, params?: RouteParams) => {
+  if (navigate) {
+    navigate(route, params)
+  }
+}
 
 // Store
 const shiftStore = useShiftStore()
@@ -34,12 +84,56 @@ const settingsStore = useSettingsStore()
 const {
   isShiftActive,
   currentShift,
-  archivedShifts,
+  startShift,
+  endShift,
   loadShiftData
 } = shiftStore
 
 // Loading state
 const isLoading = ref(true)
+
+// Supervisors list
+const supervisors = computed(() => {
+  return settingsStore.supervisors
+})
+
+// Local state
+const supervisor = ref('')
+const initialPorters = ref<string[]>([])
+
+// Computed
+const shiftTitle = computed(() => {
+  if (!currentShift.value) return ''
+  
+  const date = new Date(currentShift.value.date)
+  return `${formatDate(date)}`
+})
+
+// Methods
+const startSpecificShift = async (type: ShiftType) => {
+  try {
+    if (!supervisor.value) return
+    
+    // Start the shift with the supervisor
+    await startShift(type, supervisor.value)
+    
+    // Navigate to the tasks view
+    safeNavigate('tasks')
+  } catch (error) {
+    console.error('Error starting shift:', error)
+  }
+}
+
+const endCurrentShift = async () => {
+  try {
+    await endShift()
+    
+    // Force UI refresh by navigating back to home
+    safeNavigate('home')
+  } catch (error) {
+    console.error('Error ending shift:', error)
+  }
+}
 
 // Initialize data
 onMounted(async () => {
@@ -49,10 +143,14 @@ onMounted(async () => {
     
     // Load shift data
     await loadShiftData()
+    
+    // Set default supervisor if available
+    if (supervisors.value.length > 0) {
+      supervisor.value = supervisors.value[0]
+    }
   } catch (error) {
     console.error('Error initializing home view:', error)
   } finally {
-    // Even if there was an error, show the UI
     isLoading.value = false
   }
 })
@@ -74,5 +172,92 @@ onMounted(async () => {
   justify-content: center;
   align-items: center;
   min-height: 300px;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 20px;
+}
+
+.shift-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.shift-info {
+  margin-bottom: 20px;
+}
+
+.shift-supervisor {
+  color: #666;
+  margin-top: 10px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.shift-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-primary {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.new-shift {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.shift-form {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 </style>
