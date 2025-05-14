@@ -211,12 +211,12 @@
             Mark as Pending
           </button>
           
-          <!-- Complete Now button - only for new tasks -->
+          <!-- Complete Now button - available for new tasks and archived tasks -->
           <button 
-            v-if="!isEditing"
+            v-if="!isEditing || isFromArchive"
             type="button" 
             class="btn-success" 
-            :disabled="!isFormValid || isTaskReceivedBeforeShift || (!isTaskTimingValid && !isFromArchive)"
+            :disabled="!isFormValid || (isTaskReceivedBeforeShift && !isFromArchive) || (!isTaskTimingValid && !isFromArchive)"
             @click="saveTask('Completed')"
           >
             Complete Now
@@ -240,9 +240,10 @@ const props = defineProps<{
   taskId?: string;
 }>();
 
-// Router injection
-const navigate = inject<(route: string, params?: RouteParams) => void>('navigate');
-const route = inject<any>('route');
+// Router
+import { useRouter, useRoute } from 'vue-router';
+const router = useRouter();
+const route = useRoute();
 
 // Stores
 const shiftStore = useShiftStore();
@@ -294,10 +295,16 @@ const porters = computed(() => {
   return currentShift.assignedPorters.filter(porter => !assignedToDepartments.has(porter));
 });
 
+// Form mode type definition
+type FormMode = 'CREATE_NEW' | 'EDIT_CURRENT' | 'EDIT_ARCHIVED';
+
 // State
-const isEditing = computed(() => !!props.taskId);
-const isFromArchive = ref(false);
+const formMode = ref<FormMode>('CREATE_NEW');
 const currentShiftId = ref<string | null>(null);
+
+// Computed helpers based on form mode
+const isEditing = computed(() => formMode.value !== 'CREATE_NEW');
+const isFromArchive = computed(() => formMode.value === 'EDIT_ARCHIVED');
 
 // Refs for select elements for direct DOM manipulation if needed
 const fromLocationSelect = ref<HTMLSelectElement | null>(null);
@@ -306,36 +313,45 @@ const toLocationSelect = ref<HTMLSelectElement | null>(null);
 // Flag to track if this is the initial load
 const isInitialLoad = ref(true);
 
-// Determine the context we're editing from
-const checkReferrer = () => {
-  // First check the URL for archive context
+// Determine the form mode and context
+const determineFormMode = () => {
+  // If no taskId, we're creating a new task
+  if (!props.taskId) {
+    formMode.value = 'CREATE_NEW';
+    console.log('Form mode: CREATE_NEW');
+    return;
+  }
+  
+  // Check if we're editing from an archive context
   if (window.location.href.includes('/archive/')) {
     // Extract shift ID from URL if possible
     const matches = window.location.href.match(/\/archive\/([^/?]+)/);
     if (matches && matches[1]) {
       currentShiftId.value = matches[1];
-      isFromArchive.value = true;
-      console.log('Detected editing from archive, shift ID:', currentShiftId.value);
+      formMode.value = 'EDIT_ARCHIVED';
+      console.log('Form mode: EDIT_ARCHIVED (from URL), shift ID:', currentShiftId.value);
+      return;
     }
-  } 
+  }
   
-  // If not detected from URL, try to find the task's shift in archived shifts
-  if (!isFromArchive.value && props.taskId) {
-    // Check if this task belongs to an archived shift
-    const task = getTask(props.taskId);
-    if (task) {
-      // Search in archived shifts for this task
-      const archivedShifts = shiftStore.archivedShifts;
-      for (const shift of archivedShifts) {
-        const found = shift.tasks.find(t => t.id === props.taskId);
-        if (found) {
-          currentShiftId.value = shift.id;
-          isFromArchive.value = true;
-          console.log('Task belongs to archived shift:', shift.id);
-          break;
-        }
+  // If not detected from URL, try to find if the task belongs to an archived shift
+  const task = getTask(props.taskId);
+  if (task) {
+    // Search in archived shifts for this task
+    const archivedShifts = shiftStore.archivedShifts;
+    for (const shift of archivedShifts) {
+      const found = shift.tasks.find(t => t.id === props.taskId);
+      if (found) {
+        currentShiftId.value = shift.id;
+        formMode.value = 'EDIT_ARCHIVED';
+        console.log('Form mode: EDIT_ARCHIVED (from task lookup), shift ID:', shift.id);
+        return;
       }
     }
+    
+    // If we reach here, we're editing a current task
+    formMode.value = 'EDIT_CURRENT';
+    console.log('Form mode: EDIT_CURRENT');
   }
 };
 
@@ -552,20 +568,10 @@ const loadTask = () => {
   if (task) {
     console.log('Loading task for editing:', task);
     
-    // If we found the task but haven't identified it's from archive yet,
-    // check to see if it belongs to an archived shift
-    if (!isFromArchive.value) {
-      const archivedShifts = shiftStore.archivedShifts;
-      for (const shift of archivedShifts) {
-        const found = shift.tasks.find(t => t.id === props.taskId);
-        if (found) {
-          currentShiftId.value = shift.id;
-          isFromArchive.value = true;
-          console.log('Task belongs to archived shift (from loadTask):', shift.id);
-          break;
-        }
-      }
-    }
+    // FormMode should already be set by determineFormMode()
+    // We can log the current mode for debugging
+    console.log(`Loading task in ${formMode.value} mode`);
+    
     // Get time from ISO string if available or use defaults
     const receivedTime = task.receivedTime 
       ? new Date(task.receivedTime).toTimeString().substring(0, 5) 
@@ -613,12 +619,15 @@ const loadTask = () => {
 
 // Actions for buttons
 const saveTask = async (status: 'Pending' | 'Completed') => {
+  console.log(`saveTask() called with status: ${status}, formMode: ${formMode.value}`);
+  
   try {
     // Set task status
     formData.value.status = status;
     
     // If form is not valid, don't proceed
     if (!isFormValid.value) {
+      console.warn('Form is not valid, cannot save task');
       return;
     }
     
@@ -634,47 +643,69 @@ const saveTask = async (status: 'Pending' | 'Completed') => {
         : undefined,
     };
     
+    console.log('Task data prepared for saving:', taskData);
+    
     // Update or create the task
     if (isEditing.value) {
-      await updateTask(props.taskId as string, taskData);
-      console.log('Task updated successfully');
+      console.log(`Updating existing task with ID: ${props.taskId}`);
+      if (!props.taskId) {
+        console.error('Task ID is undefined, cannot update');
+        alert('Error updating task: Missing task ID');
+        return;
+      }
+      
+      const updatedTask = await updateTask(props.taskId, taskData);
+      console.log('Task updated successfully:', updatedTask);
     } else {
-      await createTask(taskData);
-      console.log('Task created successfully');
+      console.log('Creating new task');
+      const newTask = await createTask(taskData);
+      console.log('Task created successfully:', newTask);
     }
     
     // Navigate back
+    console.log('Task saved, navigating back');
     cancel();
   } catch (error) {
     console.error('Error saving task:', error);
-    alert('An error occurred while saving the task. Please try again.');
+    alert(`An error occurred while saving the task: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 
 const handleDeleteTask = async () => {
-  if (!props.taskId) return;
+  console.log(`handleDeleteTask() called for task ID: ${props.taskId}, formMode: ${formMode.value}`);
+  
+  if (!props.taskId) {
+    console.error('Task ID is undefined, cannot delete');
+    return;
+  }
   
   const confirmDelete = confirm('Are you sure you want to delete this task?');
-  if (!confirmDelete) return;
+  if (!confirmDelete) {
+    console.log('Task deletion cancelled by user');
+    return;
+  }
   
   try {
-    await deleteTask(props.taskId);
-    console.log('Task deleted successfully');
+    console.log(`Deleting task with ID: ${props.taskId}`);
+    const result = await deleteTask(props.taskId);
+    console.log('Task deleted successfully, result:', result);
     cancel();
   } catch (error) {
     console.error('Error deleting task:', error);
-    alert('An error occurred while deleting the task. Please try again.');
+    alert(`An error occurred while deleting the task: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 
 const cancel = () => {
-  console.log('Cancelling and navigating back');
+  console.log(`cancel() called, formMode: ${formMode.value}`);
   
   // Go back to the shift view or the appropriate task view
-  // Use history back or navigate to the correct route
-  if (navigate) {
-    navigate('shift'); // Go back to the shift view
-  } else {
+  try {
+    console.log('Using Vue router to return to tasks view');
+    router.push({ name: 'tasks' });
+  } catch (error) {
+    console.error('Error navigating with router:', error);
+    console.log('Falling back to window.history.back()');
     window.history.back();
   }
 };
@@ -683,8 +714,11 @@ const cancel = () => {
 onMounted(() => {
   console.log('Task form mounted with taskId:', props.taskId);
   
-  // Check referrer for archive context
-  checkReferrer();
+  // Determine form mode and context
+  determineFormMode();
+  
+  // Initialize UI based on the form mode
+  console.log(`Initializing form in mode: ${formMode.value}`);
   
   // Load existing task if editing
   if (props.taskId) {
