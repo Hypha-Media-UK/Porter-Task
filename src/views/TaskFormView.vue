@@ -176,6 +176,7 @@
         </div>
 
         <div class="form-actions">
+          <!-- Cancel button - always visible -->
           <button type="button" class="btn-secondary" @click="cancel">
             Cancel
           </button>
@@ -190,37 +191,109 @@
             Delete
           </button>
           
-          <!-- Update button (main action button) -->
-          <button 
-            type="button" 
-            class="btn-primary" 
-            :disabled="!isFormValid"
-            @click="saveTask(formData.status || 'Pending')"
-          >
-            Update
-          </button>
+          <!-- SCENARIO 1: New Task -->
+          <template v-if="formMode === 'CREATE_NEW'">
+            <!-- Mark as Pending button -->
+            <button 
+              type="button" 
+              class="btn-secondary" 
+              :disabled="!isFormValid"
+              @click="saveTask('Pending')"
+            >
+              Mark as Pending
+            </button>
+            
+            <!-- Mark as Completed button -->
+            <button 
+              type="button" 
+              class="btn-success" 
+              :disabled="!isFormValid || isTaskReceivedBeforeShift || !isTaskTimingValid"
+              @click="saveTask('Completed')"
+            >
+              Mark as Completed
+            </button>
+          </template>
           
-          <!-- Mark as Pending button -->
-          <button 
-            v-if="!isEditing || formData.status !== 'Pending'"
-            type="button" 
-            class="btn-secondary" 
-            :disabled="!isFormValid"
-            @click="saveTask('Pending')"
-          >
-            Mark as Pending
-          </button>
+          <!-- SCENARIO 2: Pending Task from Current Shift -->
+          <template v-else-if="formMode === 'EDIT_CURRENT' && formData.status === 'Pending'">
+            <!-- Update button -->
+            <button 
+              type="button" 
+              class="btn-primary" 
+              :disabled="!isFormValid"
+              @click="saveTask('Pending')"
+            >
+              Update
+            </button>
+            
+            <!-- Mark as Completed button -->
+            <button 
+              type="button" 
+              class="btn-success" 
+              :disabled="!isFormValid || isTaskReceivedBeforeShift || !isTaskTimingValid"
+              @click="saveTask('Completed')"
+            >
+              Mark as Completed
+            </button>
+          </template>
           
-          <!-- Complete Now button - available for new tasks and archived tasks -->
-          <button 
-            v-if="!isEditing || isFromArchive"
-            type="button" 
-            class="btn-success" 
-            :disabled="!isFormValid || (isTaskReceivedBeforeShift && !isFromArchive) || (!isTaskTimingValid && !isFromArchive)"
-            @click="saveTask('Completed')"
-          >
-            Complete Now
-          </button>
+          <!-- SCENARIO 3: Completed Task from Archive -->
+          <template v-else-if="formMode === 'EDIT_ARCHIVED' && formData.status === 'Completed'">
+            <!-- Update button -->
+            <button 
+              type="button" 
+              class="btn-primary" 
+              :disabled="!isFormValid"
+              @click="saveTask('Completed')"
+            >
+              Update
+            </button>
+            
+            <!-- Move to Pending button -->
+            <button 
+              type="button" 
+              class="btn-secondary" 
+              :disabled="!isFormValid"
+              @click="saveTask('Pending')"
+            >
+              Move to Pending
+            </button>
+          </template>
+          
+          <!-- SCENARIO 4: Pending Task from Archive -->
+          <template v-else-if="formMode === 'EDIT_ARCHIVED' && formData.status === 'Pending'">
+            <!-- Update button -->
+            <button 
+              type="button" 
+              class="btn-primary" 
+              :disabled="!isFormValid"
+              @click="saveTask('Pending')"
+            >
+              Update
+            </button>
+            
+            <!-- Mark as Completed button -->
+            <button 
+              type="button" 
+              class="btn-success" 
+              :disabled="!isFormValid"
+              @click="saveTask('Completed')"
+            >
+              Mark as Completed
+            </button>
+          </template>
+          
+          <!-- Default case (shouldn't hit this but added for completeness) -->
+          <template v-else>
+            <button 
+              type="button" 
+              class="btn-primary" 
+              :disabled="!isFormValid"
+              @click="saveTask(formData.status || 'Pending')"
+            >
+              Update
+            </button>
+          </template>
         </div>
       </form>
     </div>
