@@ -1,5 +1,9 @@
 <template>
-  <Header />
+  <Header>
+    <template #network-status>
+      <NetworkStatus />
+    </template>
+  </Header>
   
   <main class="main-content">
     <router-view v-slot="{ Component }">
@@ -16,7 +20,9 @@ import { useRouter } from 'vue-router'
 import { useShiftStore } from './stores/shift'
 import { useSettingsStore } from './stores/settings'
 import { initializeApp } from './utils/initSupabase'
+import { clearCache } from './utils/dataService'
 import Header from './components/Header.vue'
+import NetworkStatus from './components/NetworkStatus.vue'
 
 const router = useRouter()
 const shiftStore = useShiftStore()
@@ -47,6 +53,19 @@ onMounted(async () => {
     console.error('Error initializing application:', error)
   } finally {
     isInitializing.value = false
+  }
+})
+
+// Listen for online event to clear cache and reload data
+window.addEventListener('online', () => {
+  console.log('App is back online, refreshing data...')
+  clearCache() // Clear data cache
+  
+  // Reload settings data if we're initialized
+  if (!isInitializing.value) {
+    settingsStore.initialize().catch(err => {
+      console.error('Error reloading settings after coming online:', err)
+    })
   }
 })
 

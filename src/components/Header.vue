@@ -63,6 +63,9 @@
     
     <!-- Tasks Icon on right side -->
     <div class="header-right">
+      <!-- Network Status Indicator -->
+      <slot name="network-status"></slot>
+      
       <button 
         v-if="isShiftActive" 
         class="nav-button tasks-button active"
@@ -143,7 +146,7 @@ const goBack = () => {
   }
 }
 
-const navigateTo = (path) => {
+const navigateTo = (path: string) => {
   if (router) {
     router.push(path)
   }
