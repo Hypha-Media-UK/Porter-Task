@@ -48,15 +48,11 @@ CREATE TABLE IF NOT EXISTS job_category_defaults (
   id TEXT PRIMARY KEY,
   category TEXT NOT NULL,
   item_type TEXT,
-  from_building_id TEXT,
-  from_location_id TEXT,
-  to_building_id TEXT,
-  to_location_id TEXT,
+  building_id TEXT NOT NULL,
+  location_id TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (from_building_id) REFERENCES buildings(id) ON DELETE CASCADE,
-  FOREIGN KEY (from_location_id) REFERENCES departments(id) ON DELETE CASCADE,
-  FOREIGN KEY (to_building_id) REFERENCES buildings(id) ON DELETE CASCADE,
-  FOREIGN KEY (to_location_id) REFERENCES departments(id) ON DELETE CASCADE
+  FOREIGN KEY (building_id) REFERENCES buildings(id) ON DELETE CASCADE,
+  FOREIGN KEY (location_id) REFERENCES departments(id) ON DELETE CASCADE
 );
 
 -- Designation Departments for porter assignments

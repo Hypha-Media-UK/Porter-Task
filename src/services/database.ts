@@ -12,6 +12,7 @@ export * from './settingsService'
 
 // Import the Supabase client for direct access if needed
 import { supabase } from '@/utils/supabase'
+import { nanoid } from 'nanoid'
 import { checkNeedsMigration } from '@/utils/databaseUtils'
 
 /**
@@ -42,6 +43,91 @@ export async function initializeDatabase(): Promise<boolean> {
  * Seed the database with initial data from localStorage or JSON files
  * This should be called after initializing the database if the database is empty
  */
+/**
+ * Add default job category locations
+ * This is used to set up standard default locations for specific job types
+ */
+export async function addJobCategoryDefaults(): Promise<boolean> {
+  try {
+    console.log('Adding job category default locations...')
+    
+    // Check if specimen delivery default already exists
+    const { data: existingDefaults, error: checkError } = await supabase
+      .from('job_category_defaults')
+      .select('*')
+      .eq('category', 'Specimen Delivery')
+    
+    if (checkError) {
+      console.error('Error checking for existing defaults:', checkError)
+      return false
+    }
+    
+    // If default already exists, no need to add it again
+    if (existingDefaults && existingDefaults.length > 0) {
+      console.log('Default location for Specimen Delivery already exists')
+      return true
+    }
+    
+    // First, verify the building and department exist
+    const buildingId = 'new-fountain-house';
+    const departmentId = 'pathology';
+    
+    const { data: buildings } = await supabase
+      .from('buildings')
+      .select('id')
+      .eq('id', buildingId)
+    
+    const { data: departments } = await supabase
+      .from('departments')
+      .select('id, building_id')
+      .eq('id', departmentId)
+    
+    // If either the building or department doesn't exist, log an error and return
+    if (!buildings || buildings.length === 0) {
+      console.error(`Building with ID "${buildingId}" not found`)
+      return false
+    }
+    
+    if (!departments || departments.length === 0) {
+      console.error(`Department with ID "${departmentId}" not found`)
+      return false
+    }
+    
+    // Check if the department is in the expected building
+    const department = departments[0];
+    if (department.building_id !== buildingId) {
+      console.warn(`Department "${departmentId}" exists but is in building "${department.building_id}", not "${buildingId}" as expected`);
+      // Continue anyway as we'll use the correct building ID
+    }
+    
+    // Create default for Specimen Delivery
+    const { error } = await supabase
+      .from('job_category_defaults')
+      .insert([
+        {
+          id: nanoid(),
+          category: 'Specimen Delivery',
+          item_type: null, // For all items in this category
+          from_building_id: null,  // No specific from location
+          from_location_id: null,
+          to_building_id: 'new-fountain-house', // Pathology is in New Fountain House
+          to_location_id: 'pathology'
+        }
+      ])
+    
+    if (error) {
+      console.error('Error adding job category defaults:', error)
+      return false
+    }
+    
+    console.log('Successfully added job category default locations')
+    return true
+  } catch (error) {
+    console.error('Error adding job category defaults:', error)
+    return false
+  }
+}
+
 export async function seedDatabase(): Promise<boolean> {
   try {
     console.log('Checking if database needs seeding...')

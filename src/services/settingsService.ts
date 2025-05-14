@@ -66,8 +66,10 @@ export function transformJobCategoryDefaultsFromSupabase(defaults: any[]): JobCa
   return defaults.map(def => ({
     category: def.category,
     itemType: def.item_type || undefined,
-    buildingId: def.building_id,
-    locationId: def.location_id
+    fromBuildingId: def.from_building_id || undefined,
+    fromLocationId: def.from_location_id || undefined,
+    toBuildingId: def.to_building_id || undefined,
+    toLocationId: def.to_location_id || undefined
   }))
 }
 
@@ -117,8 +119,10 @@ export function transformJobCategoryDefaultToSupabase(
     id: nanoid(),
     category: defaultData.category,
     item_type: defaultData.itemType || null,
-    building_id: defaultData.buildingId,
-    location_id: defaultData.locationId
+    from_building_id: defaultData.fromBuildingId || null,
+    from_location_id: defaultData.fromLocationId || null,
+    to_building_id: defaultData.toBuildingId || null,
+    to_location_id: defaultData.toLocationId || null
   }
 }
 

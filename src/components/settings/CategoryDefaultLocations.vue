@@ -256,9 +256,8 @@ const fromDepartmentName = computed(() => {
   const building = buildings.value.find(b => b.id === fromBuildingId.value);
   if (!building) return '';
   
-  // Check in both departments and wards arrays and combine them into a single departments list
-  const allDepartments = [...building.departments, ...building.wards];
-  const department = allDepartments.find(d => d.id === fromLocationId.value);
+  // Get department by ID
+  const department = building.departments.find(d => d.id === fromLocationId.value);
   return department?.name || '';
 });
 
@@ -273,9 +272,8 @@ const toDepartmentName = computed(() => {
   const building = buildings.value.find(b => b.id === toBuildingId.value);
   if (!building) return '';
   
-  // Check in both departments and wards arrays and combine them into a single departments list
-  const allDepartments = [...building.departments, ...building.wards];
-  const department = allDepartments.find(d => d.id === toLocationId.value);
+  // Get department by ID
+  const department = building.departments.find(d => d.id === toLocationId.value);
   return department?.name || '';
 });
 
@@ -288,8 +286,8 @@ const fromDepartments = computed(() => {
   const building = buildings.value.find(b => b.id === fromBuildingId.value);
   if (!building) return [];
   
-  // Combine departments and wards into a single list
-  return [...building.departments, ...building.wards];
+  // Return departments from the building
+  return building.departments;
 });
 
 const toDepartments = computed(() => {
@@ -298,8 +296,8 @@ const toDepartments = computed(() => {
   const building = buildings.value.find(b => b.id === toBuildingId.value);
   if (!building) return [];
   
-  // Combine departments and wards into a single list
-  return [...building.departments, ...building.wards];
+  // Return departments from the building
+  return building.departments;
 });
 
 // Methods
@@ -362,39 +360,42 @@ const saveDefaults = () => {
     defaults.itemType = selectedItemType.value;
   }
   
-  // Only set properties that have values
+  // Only set From location properties if a building is selected (origin is optional)
   if (fromBuildingId.value) {
     defaults.fromBuildingId = fromBuildingId.value;
     
     if (fromLocationId.value) {
       defaults.fromLocationId = fromLocationId.value;
-      // Determine if the location is in departments or wards
+      // Determine if the location is in departments
       const building = buildings.value.find(b => b.id === fromBuildingId.value);
       if (building) {
         if (building.departments.some(d => d.id === fromLocationId.value)) {
           defaults.fromLocationType = 'department';
-        } else if (building.wards.some(w => w.id === fromLocationId.value)) {
-          defaults.fromLocationType = 'ward';
         }
       }
     }
   }
   
+  // Only set To location properties if a building is selected (destination is optional)
   if (toBuildingId.value) {
     defaults.toBuildingId = toBuildingId.value;
     
     if (toLocationId.value) {
       defaults.toLocationId = toLocationId.value;
-      // Determine if the location is in departments or wards
+      // Determine if the location is in departments
       const building = buildings.value.find(b => b.id === toBuildingId.value);
       if (building) {
         if (building.departments.some(d => d.id === toLocationId.value)) {
           defaults.toLocationType = 'department';
-        } else if (building.wards.some(w => w.id === toLocationId.value)) {
-          defaults.toLocationType = 'ward';
         }
       }
     }
+  }
+  
+  // We need at least one location set (either from or to) to save
+  if (!fromBuildingId.value && !toBuildingId.value) {
+    alert('Please set at least one location (From or To)');
+    return;
   }
   
   // Save the defaults

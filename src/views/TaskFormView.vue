@@ -1,6 +1,16 @@
 <template>
   <main class="task-form-view">
-    <div class="form-container">
+    <!-- Loading state -->
+    <div v-if="isLoading" class="form-container loading-state">
+      <LoadingSpinner message="Loading form data..." />
+      <div v-if="loadingError" class="loading-error">
+        <p>{{ loadingError }}</p>
+        <button @click="retryLoading" class="btn-primary">Retry</button>
+      </div>
+    </div>
+    
+    <!-- Form content - only shown when data is fully loaded -->
+    <div v-else-if="isDataLoaded" class="form-container">
       <h1>{{ isEditing ? 'Edit Task' : 'New Task' }}</h1>
       
       <form class="task-form">
@@ -306,6 +316,7 @@ import { useShiftStore } from '../stores/shift';
 import { useSettingsStore } from '../stores/settings';
 import type { Task, Location, RouteParams, JobCategoryDefault } from '../types';
 import { CombinedLocation, processTaskLocations } from '../utils/locationSelectionUtils';
+import LoadingSpinner from '../components/LoadingSpinner.vue';
 import '../assets/css/taskForm.css';
 
 // Props
@@ -370,6 +381,36 @@ const porters = computed(() => {
 
 // Form mode type definition
 type FormMode = 'CREATE_NEW' | 'EDIT_CURRENT' | 'EDIT_ARCHIVED';
+
+// Loading state
+const isLoading = ref(true);
+const loadingError = ref<string | null>(null);
+const isDataLoaded = computed(() => {
+  const hasJobCategories = Object.keys(jobCategories).length > 0;
+  const hasBuildings = buildings.length > 0;
+  const hasLocations = allLocations.value.length > 0;
+  return hasJobCategories && hasBuildings && hasLocations;
+});
+
+// Function to retry loading if data is missing
+const retryLoading = async () => {
+  isLoading.value = true;
+  loadingError.value = null;
+  
+  try {
+    await settingsStore.initialize();
+    
+    // After retrying, check if we have the required data
+    if (!isDataLoaded.value) {
+      loadingError.value = "Could not load all required data. Please try again.";
+    } else {
+      isLoading.value = false;
+    }
+  } catch (err) {
+    loadingError.value = err instanceof Error ? err.message : "Failed to load required data";
+    console.error("Error loading form data:", err);
+  }
+};
 
 // State
 const formMode = ref<FormMode>('CREATE_NEW');
@@ -475,6 +516,104 @@ const formData = ref<{
   allocatedTime: getTimeMinutesFromNow(1),
   completedTime: getTimeMinutesFromNow(17)
 });
+
+// Apply default locations when job category or item type changes
+const applyDefaultLocations = () => {
+  if (!formData.value.jobCategory) return;
+  
+  // Find default locations for this job category and item type
+  console.log(`Looking for default locations for category: ${formData.value.jobCategory}, item: ${formData.value.itemType || 'any'}`);
+  console.log(`All job category defaults:`, settingsStore.jobCategoryDefaults);
+  
+  // MANUAL DEFAULT: If Specimen Delivery is selected, set the destination to Pathology
+  if (formData.value.jobCategory === 'Specimen Delivery') {
+    console.log('Applying hardcoded default for Specimen Delivery: Pathology in New Fountain House');
+    const pathologyLocation = allLocations.value.find(
+      loc => loc.buildingId === 'new-fountain-house' && loc.id === 'pathology'
+    );
+    
+    if (pathologyLocation) {
+      console.log('Found Pathology location:', pathologyLocation);
+      selectedToLocation.value = pathologyLocation;
+    } else {
+      console.warn('Could not find Pathology location in New Fountain House');
+    }
+    
+    // Return early as we've applied our manual default
+    return;
+  }
+  
+  // For other categories, continue with the normal flow
+  // First try to get item-specific defaults
+  let defaultLocation: JobCategoryDefault | undefined;
+  
+  if (formData.value.itemType) {
+    defaultLocation = settingsStore.getJobCategoryDefault(
+      formData.value.jobCategory, 
+      formData.value.itemType
+    );
+    console.log(`Item-specific default search result:`, defaultLocation);
+  }
+  
+  // If no item-specific defaults found, try category-level defaults
+  if (!defaultLocation) {
+    defaultLocation = settingsStore.getJobCategoryDefault(formData.value.jobCategory);
+    console.log(`Category-level default search result:`, defaultLocation);
+  }
+  
+  if (defaultLocation) {
+    console.log('Found default locations:', defaultLocation);
+    
+    // Apply from (origin) location if available
+    if (defaultLocation.fromBuildingId && defaultLocation.fromLocationId) {
+      console.log(`Looking for fromLocation with buildingId=${defaultLocation.fromBuildingId} and id=${defaultLocation.fromLocationId}`);
+      console.log(`Available locations:`, allLocations.value);
+      
+      const fromLocation = allLocations.value.find(
+        loc => loc.buildingId === defaultLocation.fromBuildingId && 
+              loc.id === defaultLocation.fromLocationId
+      );
+      
+      if (fromLocation) {
+        console.log('Applying default FROM location:', fromLocation);
+        selectedFromLocation.value = fromLocation;
+      } else {
+        console.warn(`Could not find matching fromLocation for default:`, defaultLocation.fromBuildingId, defaultLocation.fromLocationId);
+      }
+    }
+    
+    // Apply to (destination) location if available
+    if (defaultLocation.toBuildingId && defaultLocation.toLocationId) {
+      console.log(`Looking for toLocation with buildingId=${defaultLocation.toBuildingId} and id=${defaultLocation.toLocationId}`);
+      
+      const toLocation = allLocations.value.find(
+        loc => loc.buildingId === defaultLocation.toBuildingId && 
+              loc.id === defaultLocation.toLocationId
+      );
+      
+      if (toLocation) {
+        console.log('Applying default TO location:', toLocation);
+        selectedToLocation.value = toLocation;
+      } else {
+        console.warn(`Could not find matching toLocation for default:`, defaultLocation.toBuildingId, defaultLocation.toLocationId);
+      }
+    }
+  } else {
+    console.log('No default locations found for this job category/item');
+  }
+};
+
+// Watch for changes in job category or item type to apply defaults
+watch([() => formData.value.jobCategory, () => formData.value.itemType], 
+  ([newCategory, newItemType], [oldCategory, oldItemType]) => {
+    // Only apply defaults on initial selection or when category/item changes
+    // Don't clear existing selections when editing a task
+    if ((newCategory && newCategory !== oldCategory) || 
+        (newItemType && newItemType !== oldItemType && !isEditing.value)) {
+      applyDefaultLocations();
+    }
+  }
+);
 
 // Watch for changes in selected locations
 watch(selectedFromLocation, (newLocation) => {
@@ -784,18 +923,77 @@ const cancel = () => {
 };
 
 // Mount setup
-onMounted(() => {
+onMounted(async () => {
   console.log('Task form mounted with taskId:', props.taskId);
   
-  // Determine form mode and context
-  determineFormMode();
-  
-  // Initialize UI based on the form mode
-  console.log(`Initializing form in mode: ${formMode.value}`);
-  
-  // Load existing task if editing
-  if (props.taskId) {
-    loadTask();
+  try {
+    // Verify all required data is loaded
+    if (!isDataLoaded.value) {
+      console.log("Required data not fully loaded, attempting to load...");
+      
+      // Try to load/reload data
+      try {
+        await settingsStore.initialize();
+      } catch (err) {
+        console.error("Error initializing stores:", err);
+      }
+      
+      // Check again after attempting to load
+      if (!isDataLoaded.value) {
+        loadingError.value = "Some required data could not be loaded. Please try reloading the page.";
+        console.warn("After initialization attempt, still missing required data:", {
+          hasJobCategories: Object.keys(jobCategories).length > 0,
+          hasBuildings: buildings.length > 0,
+          hasLocations: allLocations.value.length > 0
+        });
+      }
+    }
+    
+    // If data is loaded, proceed with form initialization
+    if (isDataLoaded.value) {
+      // Determine form mode and context
+      determineFormMode();
+      
+      // Initialize UI based on the form mode
+      console.log(`Initializing form in mode: ${formMode.value}`);
+      
+      // Load existing task if editing
+      if (props.taskId) {
+        loadTask();
+      }
+      
+      // Mark loading as complete
+      isLoading.value = false;
+    }
+  } catch (err) {
+    console.error("Error during TaskForm initialization:", err);
+    loadingError.value = "An error occurred while initializing the form.";
   }
 });
 </script>
+
+<style scoped>
+/* Loading state styling */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+}
+
+.loading-error {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--color-danger-light, rgba(220, 53, 69, 0.1));
+  border: 1px solid var(--color-danger, #dc3545);
+  border-radius: var(--border-radius);
+  color: var(--color-danger, #dc3545);
+  max-width: 80%;
+}
+
+.loading-error p {
+  margin-bottom: var(--spacing-md);
+}
+</style>

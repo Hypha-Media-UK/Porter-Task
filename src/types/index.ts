@@ -19,9 +19,12 @@ export interface JobCategoriesMap {
 export interface JobCategoryDefault {
   category: string;
   itemType?: string; // Optional specific item type within the category
-  buildingId: string;
-  locationId: string;
-  locationType?: 'department' | 'ward';
+  fromBuildingId?: string;
+  fromLocationId?: string;
+  fromLocationType?: 'department' | 'ward';
+  toBuildingId?: string;
+  toLocationId?: string;
+  toLocationType?: 'department' | 'ward';
 }
 
 // Shift schedule types
@@ -63,6 +66,7 @@ export interface Location {
   building: string; // Building ID
   locationId: string; // Department ID
   displayName: string; // Full display name
+  locationType?: 'department' | 'ward'; // Type of location
 }
 
 // Supabase table types
@@ -90,8 +94,10 @@ export interface SupabaseJobCategoryDefault {
   id: string;
   category: string;
   item_type: string | null;
-  building_id: string;
-  location_id: string;
+  from_building_id: string | null;
+  from_location_id: string | null;
+  to_building_id: string | null;
+  to_location_id: string | null;
   created_at?: string;
 }
 

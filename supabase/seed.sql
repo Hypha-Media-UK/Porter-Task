@@ -156,8 +156,8 @@ INSERT INTO job_categories (id, category, item_type) VALUES
 ('adhoc-documents', 'Adhoc', 'Documents');
 
 -- Insert job category defaults
-INSERT INTO job_category_defaults (id, category, item_type, building_id, location_id) VALUES
-('pt-rose-cottage-default', 'Patient Transfer', 'Rose Cottage', 'bereavement-center', 'rose-cotage');
+INSERT INTO job_category_defaults (id, category, item_type, from_building_id, from_location_id, to_building_id, to_location_id) VALUES
+('pt-rose-cottage-default', 'Patient Transfer', 'Rose Cottage', NULL, NULL, 'bereavement-center', 'rose-cotage');
 
 -- Update settings for shift times
 UPDATE settings SET value = '08:00' WHERE key = 'shift_day_start';

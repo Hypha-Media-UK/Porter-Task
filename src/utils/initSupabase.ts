@@ -47,6 +47,15 @@ export async function initializeApp(): Promise<boolean> {
       console.log('Database already contains data, no need to seed.')
     }
     
+    // Step 6: Add or ensure default job category locations
+    try {
+      const { addJobCategoryDefaults } = await import('../services/database');
+      await addJobCategoryDefaults();
+    } catch (error) {
+      console.warn('Error adding job category defaults:', error);
+      // Continue anyway as this is not critical
+    }
+    
     console.log('Application initialized successfully')
     return true
   } catch (error) {
