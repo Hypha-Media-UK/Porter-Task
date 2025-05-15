@@ -173,6 +173,32 @@ export async function createShift(shiftData: {
   supervisor: string, 
   startTime: string 
 }) {
+  // First, let's handle any existing active shifts to avoid conflicts
+  try {
+    const { data: activeShifts } = await supabase
+      .from('shifts')
+      .select('id')
+      .eq('is_active', true)
+      .limit(10);
+      
+    if (activeShifts && activeShifts.length > 0) {
+      console.log('Found existing active shifts, deactivating:', activeShifts.length);
+      
+      // Deactivate all existing active shifts
+      const { error: deactivateError } = await supabase
+        .from('shifts')
+        .update({ is_active: false })
+        .in('id', activeShifts.map(s => s.id));
+        
+      if (deactivateError) {
+        console.warn('Failed to deactivate old shifts, but continuing:', deactivateError);
+      }
+    }
+  } catch (err) {
+    console.warn('Error checking for active shifts, continuing anyway:', err);
+  }
+  
+  // Now create the new shift
   const newShift: SupabaseShift = {
     id: nanoid(),
     date: shiftData.date,
@@ -187,10 +213,14 @@ export async function createShift(shiftData: {
     .from('shifts')
     .insert(newShift)
     .select('*')
-    .single()
+    .single();
   
-  if (error) throw error
+  if (error) {
+    console.error('Error creating shift in Supabase:', error);
+    throw error;
+  }
   
+  // Return a proper Shift object with the appropriate structure
   return {
     id: data.id,
     date: data.date,
@@ -198,6 +228,7 @@ export async function createShift(shiftData: {
     supervisor: data.supervisor,
     startTime: data.start_time,
     endTime: data.end_time,
+    isActive: data.is_active || true, // Ensure isActive is set
     tasks: []
   }
 }
