@@ -51,40 +51,70 @@ export async function loadCurrentShift(): Promise<boolean> {
     // First check if we have a shift ID in sessionStorage (for page refreshes)
     const sessionShiftId = sessionStorage.getItem(CURRENT_SHIFT_ID_SESSION_KEY)
     
+    // Track attempts to help debugging
+    let attempts = 0;
+    let shiftLoaded = false;
+    
     if (sessionShiftId) {
       console.log('Found shift ID in session storage, attempting to load shift:', sessionShiftId)
+      attempts++;
       
       try {
         // Try to load the shift by ID from database
         const shift = await db.getShift(sessionShiftId)
         
         if (shift) {
-          currentShift.value = ensureShiftArrays(shift)
-          console.log('Loaded current shift from database using session ID:', shift)
-          return true
+          // Only consider it active if it has no end time
+          if (!shift.endTime) {
+            currentShift.value = ensureShiftArrays(shift)
+            console.log('Loaded active current shift from database using session ID:', shift.id)
+            console.log('Current shift object:', JSON.stringify(currentShift.value))
+            shiftLoaded = true;
+          } else {
+            console.log('Session contains an archived shift, will check for newer active shifts')
+            // Clear session storage if this is an archived shift
+            sessionStorage.removeItem(CURRENT_SHIFT_ID_SESSION_KEY)
+          }
         } else {
           console.warn('Shift ID from session not found in database:', sessionShiftId)
+          // Clear invalid session ID
+          sessionStorage.removeItem(CURRENT_SHIFT_ID_SESSION_KEY)
         }
       } catch (dbErr) {
-        console.warn('Error loading shift from database using session ID, checking localStorage:', dbErr)
+        console.warn('Error loading shift from database using session ID, checking active shifts:', dbErr)
       }
     }
     
-    // Next try to load the active shift from database
-    try {
-      const shift = await db.getCurrentShift()
-      
-      if (shift) {
-        currentShift.value = ensureShiftArrays(shift)
-        // Save the ID to session storage for page refresh persistence
-        if (shift.id) {
-          sessionStorage.setItem(CURRENT_SHIFT_ID_SESSION_KEY, shift.id)
+    // If we didn't successfully load a shift from session ID, try to load the active shift
+    if (!shiftLoaded) {
+      attempts++;
+      try {
+        console.log('Checking database for any active shifts...')
+        const shift = await db.getCurrentShift()
+        
+        if (shift) {
+          currentShift.value = ensureShiftArrays(shift)
+          // Save the ID to session storage for page refresh persistence
+          if (shift.id) {
+            sessionStorage.setItem(CURRENT_SHIFT_ID_SESSION_KEY, shift.id)
+            console.log('Set session shift ID to:', shift.id)
+          }
+          console.log('Loaded current shift from database:', shift.id)
+          console.log('Current shift object details:', JSON.stringify({
+            id: shift.id,
+            date: shift.date,
+            endTime: shift.endTime,
+            type: shift.type
+          }))
+          shiftLoaded = true;
+        } else {
+          console.log('No active shifts found in database')
+          // Clear session storage if we confirmed no active shifts
+          sessionStorage.removeItem(CURRENT_SHIFT_ID_SESSION_KEY)
         }
-        console.log('Loaded current shift from database:', shift)
-        return true
+      } catch (dbErr) {
+        console.warn('Error loading current shift from database, falling back to localStorage:', dbErr)
       }
-    } catch (dbErr) {
-      console.warn('Error loading current shift from database, falling back to localStorage:', dbErr)
     }
     
     // Fall back to localStorage if database fails

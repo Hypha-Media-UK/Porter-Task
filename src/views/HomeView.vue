@@ -5,7 +5,7 @@
     </div>
     
     <template v-else>
-      <section v-if="isShiftActive && currentShift" class="active-shift">
+      <section v-if="isShiftDataReady && isShiftActive && currentShift" class="active-shift">
         <h1>Current Shift</h1>
         
         <!-- Current shift overview -->
@@ -120,6 +120,11 @@ const isDataReady = computed(() => {
   return !isLoading.value && settingsStore.isInitialized && isLoaded
 })
 
+// Current shift loading status - ensures shift status is properly determined
+const isShiftDataReady = computed(() => {
+  return isDataReady.value && isShiftActive !== undefined;
+})
+
 // Supervisors and porters lists
 const supervisors = computed(() => {
   return settingsStore.supervisors
@@ -227,10 +232,19 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error initializing home view:', error)
   } finally {
-    // Small delay to ensure all reactivity has time to fully update
-    setTimeout(() => {
+    // Longer delay to ensure all reactivity has time to fully update
+    // This is important for the shift status to be correctly determined
+    setTimeout(async () => {
+      // Double-check shift status one more time
+      if (settingsStore.isInitialized && !isLoaded) {
+        console.log('Performing additional shift data check...')
+        await loadShiftData()
+      }
+      
+      // Log the final state before revealing UI
+      console.log('Final shift status check:', isShiftActive ? 'Active' : 'None')
       isLoading.value = false
-    }, 200)
+    }, 500)
   }
 })
 

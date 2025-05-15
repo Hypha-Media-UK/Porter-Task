@@ -31,29 +31,51 @@ const isInitializing = ref(true)
 
 const { loadShiftData, isShiftActive } = shiftStore
 
-onMounted(async () => {
-  console.log('App mounted - initializing application...')
-  
+// Make more robust initialization attempts
+async function initializeAppData(retryCount = 0) {
   try {
+    console.log(`App mounted - initializing application... (attempt ${retryCount + 1})`)
+    
     // Initialize Supabase, ensure tables, and seed data if needed
     await initializeApp()
     
     // Initialize settings and location data
     await settingsStore.initialize()
     
-    // Initialize shift data
+    // Initialize shift data with forced refresh
     await loadShiftData()
+    
+    // Wait briefly for reactivity to update
+    await new Promise(resolve => setTimeout(resolve, 100))
     
     // If a shift is active, navigate to the tasks screen
     if (isShiftActive && router.currentRoute.value.name === 'home') {
       console.log('Active shift detected, navigating to tasks screen')
       router.push({ name: 'tasks' })
     }
+    
+    console.log('Application initialization complete - shift active:', isShiftActive)
+    return true
   } catch (error) {
-    console.error('Error initializing application:', error)
+    console.error(`Error initializing application (attempt ${retryCount + 1}):`, error)
+    
+    // Retry initialization if we haven't exceeded max retries
+    if (retryCount < 2) {
+      console.log(`Retrying initialization in 500ms...`)
+      await new Promise(resolve => setTimeout(resolve, 500))
+      return initializeAppData(retryCount + 1)
+    }
+    
+    return false
   } finally {
-    isInitializing.value = false
+    if (retryCount === 0) {
+      isInitializing.value = false
+    }
   }
+}
+
+onMounted(async () => {
+  await initializeAppData()
 })
 
 // Listen for online event to clear cache and reload data

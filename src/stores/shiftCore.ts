@@ -15,7 +15,18 @@ export const ARCHIVED_SHIFTS_STORAGE_KEY = 'porter-track-archived-shifts'
 export const CURRENT_SHIFT_ID_SESSION_KEY = 'porter-track-current-shift-id'
 
 // Computed values
-export const isShiftActive = computed(() => !!currentShift.value)
+export const isShiftActive = computed(() => {
+  // Check for active flag from database, explicitly use the `isActive` property
+  const result = !!currentShift.value && currentShift.value.isActive === true;
+  console.log('isShiftActive evaluation:', { 
+    result, 
+    currentShiftExists: !!currentShift.value,
+    currentShiftId: currentShift.value?.id,
+    endTime: currentShift.value?.endTime,
+    isActive: currentShift.value?.isActive
+  });
+  return result;
+})
 
 export const pendingTasks = computed(() => {
   if (!currentShift.value) return []

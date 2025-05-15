@@ -1,6 +1,9 @@
-import { initializeSupabase, ensureTablesExist } from './supabase'
+import { initializeSupabase, ensureTablesExist, supabase } from './supabase'
 import { initializeDatabase, seedDatabase } from '../services/database'
 import { checkNeedsMigration } from './databaseUtils'
+
+// Import the migration function
+import { runMigration } from './runMigration'
 
 /**
  * Initialize Supabase connection and prepare the database
@@ -22,6 +25,25 @@ export async function initializeApp(): Promise<boolean> {
     if (!tablesExist) {
       console.warn('Some tables may not exist. Application might not function correctly.')
       // Continue anyway, as tables might be created by migrations
+    }
+    
+    // Step 2.5: Check if we need to run the active flag migration
+    try {
+      // A simple check to see if the is_active column exists
+      const { data, error } = await supabase
+        .from('shifts')
+        .select('is_active')
+        .limit(1)
+      
+      if (error) {
+        console.log('The is_active column appears to be missing, running migration...')
+        await runMigration()
+      } else {
+        console.log('Active flag column already exists, skipping migration')
+      }
+    } catch (migrationError) {
+      console.warn('Error checking/running active flag migration:', migrationError)
+      // Continue anyway as this is not critical
     }
     
     // Step 3: Initialize database connections
