@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, inject, onMounted } from 'vue'
+import { ref, computed, inject, onMounted, watch } from 'vue'
 import { useShiftStore } from '../stores/shift'
 import { useSettingsStore } from '../stores/settings'
 import { formatDate, formatTime } from '../utils/date'
@@ -108,11 +108,17 @@ const {
   endShift,
   addPorterToShift,
   removePorterFromShift,
-  loadShiftData
+  loadShiftData,
+  isLoaded
 } = shiftStore
 
 // Loading state
 const isLoading = ref(true)
+
+// Data ready status - both shift and settings are fully loaded
+const isDataReady = computed(() => {
+  return !isLoading.value && settingsStore.isInitialized && isLoaded
+})
 
 // Supervisors and porters lists
 const supervisors = computed(() => {
@@ -186,7 +192,6 @@ const handleRemoveInitialPorter = (porter: string) => {
   }
 }
 
-
 const endCurrentShift = async () => {
   try {
     await endShift()
@@ -198,14 +203,22 @@ const endCurrentShift = async () => {
   }
 }
 
-// Initialize data
+// Initialize data with more robust loading sequence
 onMounted(async () => {
   try {
+    isLoading.value = true
+    
     // Load settings data
     await settingsStore.initialize()
     
-    // Load shift data
+    // Load shift data - ensure we have the most updated data
     await loadShiftData()
+    
+    // Verify the data was properly loaded and log the current state
+    console.log('HomeView - Data initialization complete:')
+    console.log('- Settings initialized:', settingsStore.isInitialized)
+    console.log('- Shift data loaded:', isLoaded)
+    console.log('- Current shift status:', isShiftActive ? 'Active' : 'None')
     
     // Set default supervisor if available
     if (supervisors.value.length > 0) {
@@ -214,9 +227,25 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error initializing home view:', error)
   } finally {
-    isLoading.value = false
+    // Small delay to ensure all reactivity has time to fully update
+    setTimeout(() => {
+      isLoading.value = false
+    }, 200)
   }
 })
+
+// Watch for changes to shift data after initial load
+watch(() => {
+  // Return computed values that are safe to watch
+  return {
+    isActive: isShiftActive,
+    shift: currentShift
+  }
+}, (newValues) => {
+  if (!isLoading.value) {
+    console.log('HomeView - Shift status changed:', newValues.isActive ? 'Active' : 'None')
+  }
+}, { deep: true })
 </script>
 
 <style scoped>

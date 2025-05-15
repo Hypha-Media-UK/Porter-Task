@@ -6,6 +6,7 @@ export const currentShift = ref<Shift | null>(null)
 export const archivedShifts = ref<Shift[]>([])
 export const isLoading = ref(false)
 export const error = ref<string | null>(null)
+export const isLoaded = ref(false) // Track when data is fully loaded
 
 // LocalStorage keys for fallback
 export const CURRENT_SHIFT_STORAGE_KEY = 'porter-track-current-shift'

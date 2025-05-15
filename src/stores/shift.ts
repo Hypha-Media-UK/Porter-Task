@@ -6,6 +6,7 @@ import {
   archivedShifts, 
   isLoading, 
   error, 
+  isLoaded,
   isShiftActive,
   pendingTasks,
   completedTasks,
@@ -61,6 +62,7 @@ export const useShiftStore = defineStore('shift', () => {
     archivedShifts,
     isLoading,
     error,
+    isLoaded,
 
     // Computed
     isShiftActive,

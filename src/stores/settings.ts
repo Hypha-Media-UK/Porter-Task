@@ -28,6 +28,7 @@ export const useSettingsStore = defineStore('settings', () => {
   })
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const isInitialized = ref(false)
   
   /**
    * Initialize settings and location data from API/local storage
@@ -35,6 +36,7 @@ export const useSettingsStore = defineStore('settings', () => {
   async function initialize() {
     isLoading.value = true
     error.value = null
+    isInitialized.value = false
     
     try {
       // Load settings
@@ -43,6 +45,8 @@ export const useSettingsStore = defineStore('settings', () => {
       // Load location data
       await loadLocationData()
       
+      isInitialized.value = true
+      console.log('Settings initialization complete')
       return true
     } catch (err) {
       console.error('Error initializing settings:', err)
@@ -804,6 +808,7 @@ export const useSettingsStore = defineStore('settings', () => {
     shifts,
     isLoading,
     error,
+    isInitialized,
     
     // Actions
     initialize,

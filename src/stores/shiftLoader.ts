@@ -5,9 +5,10 @@ import {
   archivedShifts, 
   isLoading, 
   error, 
+  isLoaded,
   CURRENT_SHIFT_STORAGE_KEY,
   ARCHIVED_SHIFTS_STORAGE_KEY,
-  CURRENT_SHIFT_ID_SESSION_KEY, // Add session storage key
+  CURRENT_SHIFT_ID_SESSION_KEY,
   ensureShiftArrays 
 } from './shiftCore'
 
@@ -19,11 +20,18 @@ export async function loadShiftData(): Promise<boolean> {
   error.value = null
   
   try {
+    // Reset the loaded state
+    isLoaded.value = false
+    
     // Attempt to load current shift first
     await loadCurrentShift()
     
     // Then load archived shifts
     await loadArchivedShifts()
+    
+    // Mark as loaded
+    isLoaded.value = true
+    console.log('Shift data loaded successfully, isShiftActive:', !!currentShift.value)
     
     return true
   } catch (err) {
