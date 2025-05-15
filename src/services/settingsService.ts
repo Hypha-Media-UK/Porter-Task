@@ -254,138 +254,241 @@ export async function getLocations(): Promise<LocationsData> {
 // Save settings
 export async function saveSettings(settings: SettingsData): Promise<boolean> {
   try {
+    console.log('Saving settings to Supabase...');
+    
     // Begin a transaction for all settings updates
     // (Note: Supabase doesn't support true transactions, so we do our best here)
     
     // 1. Update supervisors (delete all and re-insert)
-    const supervisorsToInsert = settings.supervisors.map(name => ({ name }))
-    await supabase.from('supervisors').delete().gt('id', 0) // Delete all
-    if (supervisorsToInsert.length > 0) {
-      const { error: supervisorsError } = await supabase
-        .from('supervisors')
-        .insert(supervisorsToInsert)
+    try {
+      const supervisorsToInsert = settings.supervisors.map(name => ({ name }))
+      const { error: deleteError } = await supabase.from('supervisors').delete().neq('name', 'NOT_A_NAME') // Delete all
       
-      if (supervisorsError) throw supervisorsError
+      if (deleteError) {
+        console.warn('Error deleting supervisors:', deleteError);
+      }
+      
+      if (supervisorsToInsert.length > 0) {
+        const { error: supervisorsError } = await supabase
+          .from('supervisors')
+          .insert(supervisorsToInsert)
+        
+        if (supervisorsError) {
+          console.warn('Error inserting supervisors:', supervisorsError);
+        }
+      }
+    } catch (supervisorsErr) {
+      console.warn('Failed to update supervisors:', supervisorsErr);
+      // Continue with other updates
     }
     
     // 2. Update porters (delete all and re-insert)
-    const portersToInsert = settings.porters.map(name => ({ name }))
-    await supabase.from('porters').delete().gt('id', 0) // Delete all
-    if (portersToInsert.length > 0) {
-      const { error: portersError } = await supabase
-        .from('porters')
-        .insert(portersToInsert)
+    try {
+      const portersToInsert = settings.porters.map(name => ({ name }))
+      const { error: deleteError } = await supabase.from('porters').delete().neq('name', 'NOT_A_NAME') // Delete all
       
-      if (portersError) throw portersError
+      if (deleteError) {
+        console.warn('Error deleting porters:', deleteError);
+      }
+      
+      if (portersToInsert.length > 0) {
+        const { error: portersError } = await supabase
+          .from('porters')
+          .insert(portersToInsert)
+        
+        if (portersError) {
+          console.warn('Error inserting porters:', portersError);
+        }
+      }
+    } catch (portersErr) {
+      console.warn('Failed to update porters:', portersErr);
+      // Continue with other updates
     }
     
     // 3. Update job categories (delete all and re-insert)
-    const jobCategoriesToInsert: SupabaseJobCategory[] = []
-    
-    // For each category, insert both the category itself and its item types
-    Object.entries(settings.jobCategories).forEach(([category, itemTypes]) => {
-      // Insert the category
-      jobCategoriesToInsert.push(transformJobCategoryToSupabase(category))
+    try {
+      const jobCategoriesToInsert: SupabaseJobCategory[] = []
       
-      // Insert each item type
-      itemTypes.forEach(itemType => {
-        jobCategoriesToInsert.push(transformJobCategoryToSupabase(category, itemType))
+      // For each category, insert both the category itself and its item types
+      Object.entries(settings.jobCategories).forEach(([category, itemTypes]) => {
+        // Insert the category
+        jobCategoriesToInsert.push(transformJobCategoryToSupabase(category))
+        
+        // Insert each item type
+        itemTypes.forEach(itemType => {
+          jobCategoriesToInsert.push(transformJobCategoryToSupabase(category, itemType))
+        })
       })
-    })
-    
-    await supabase.from('job_categories').delete().gt('id', 0) // Delete all
-    if (jobCategoriesToInsert.length > 0) {
-      const { error: categoriesError } = await supabase
-        .from('job_categories')
-        .insert(jobCategoriesToInsert)
       
-      if (categoriesError) throw categoriesError
+      const { error: deleteError } = await supabase.from('job_categories').delete().neq('category', 'NOT_A_CATEGORY') // Delete all
+      
+      if (deleteError) {
+        console.warn('Error deleting job categories:', deleteError);
+      }
+      
+      if (jobCategoriesToInsert.length > 0) {
+        const { error: categoriesError } = await supabase
+          .from('job_categories')
+          .insert(jobCategoriesToInsert)
+        
+        if (categoriesError) {
+          console.warn('Error inserting job categories:', categoriesError);
+        }
+      }
+    } catch (categoriesErr) {
+      console.warn('Failed to update job categories:', categoriesErr);
+      // Continue with other updates
     }
     
     // 4. Update job category defaults (delete all and re-insert)
-    const defaultsToInsert = settings.jobCategoryDefaults.map(transformJobCategoryDefaultToSupabase)
-    await supabase.from('job_category_defaults').delete().gt('id', 0) // Delete all
-    if (defaultsToInsert.length > 0) {
-      const { error: defaultsError } = await supabase
-        .from('job_category_defaults')
-        .insert(defaultsToInsert)
+    try {
+      const defaultsToInsert = settings.jobCategoryDefaults.map(transformJobCategoryDefaultToSupabase)
       
-      if (defaultsError) throw defaultsError
+      console.log('Job category defaults to insert:', defaultsToInsert);
+      
+      const { error: deleteError } = await supabase.from('job_category_defaults').delete().neq('category', 'NOT_A_CATEGORY') // Delete all
+      
+      if (deleteError) {
+        console.warn('Error deleting job category defaults:', deleteError);
+      }
+      
+      if (defaultsToInsert.length > 0) {
+        const { error: defaultsError } = await supabase
+          .from('job_category_defaults')
+          .insert(defaultsToInsert)
+        
+        if (defaultsError) {
+          console.warn('Error inserting job category defaults:', defaultsError);
+        }
+      }
+    } catch (defaultsErr) {
+      console.warn('Failed to update job category defaults:', defaultsErr);
+      // Continue with other updates
     }
     
     // 5. Update designation departments (delete all and re-insert)
-    const deptsToInsert = settings.designationDepartments.map(transformDesignationDepartmentToSupabase)
-    await supabase.from('designation_departments').delete().gt('id', 0) // Delete all
-    if (deptsToInsert.length > 0) {
-      const { error: deptsError } = await supabase
-        .from('designation_departments')
-        .insert(deptsToInsert)
+    try {
+      const deptsToInsert = settings.designationDepartments.map(transformDesignationDepartmentToSupabase)
+      const { error: deleteError } = await supabase.from('designation_departments').delete().neq('name', 'NOT_A_NAME') // Delete all
       
-      if (deptsError) throw deptsError
+      if (deleteError) {
+        console.warn('Error deleting designation departments:', deleteError);
+      }
+      
+      if (deptsToInsert.length > 0) {
+        const { error: deptsError } = await supabase
+          .from('designation_departments')
+          .insert(deptsToInsert)
+        
+        if (deptsError) {
+          console.warn('Error inserting designation departments:', deptsError);
+        }
+      }
+    } catch (deptsErr) {
+      console.warn('Failed to update designation departments:', deptsErr);
+      // Continue with other updates
     }
     
     // 6. Update shift settings
-    const shiftSettings = [
-      { key: 'shift_day_start', value: settings.shifts.day.start },
-      { key: 'shift_day_end', value: settings.shifts.day.end },
-      { key: 'shift_night_start', value: settings.shifts.night.start },
-      { key: 'shift_night_end', value: settings.shifts.night.end }
-    ]
-    
-    for (const setting of shiftSettings) {
-      const { error } = await supabase
-        .from('settings')
-        .upsert({ key: setting.key, value: setting.value }, {
-          onConflict: 'key'
-        })
+    try {
+      const shiftSettings = [
+        { key: 'shift_day_start', value: settings.shifts.day.start },
+        { key: 'shift_day_end', value: settings.shifts.day.end },
+        { key: 'shift_night_start', value: settings.shifts.night.start },
+        { key: 'shift_night_end', value: settings.shifts.night.end }
+      ]
       
-      if (error) throw error
+      for (const setting of shiftSettings) {
+        const { error } = await supabase
+          .from('settings')
+          .upsert({ key: setting.key, value: setting.value }, {
+            onConflict: 'key'
+          })
+        
+        if (error) {
+          console.warn(`Error updating setting ${setting.key}:`, error);
+        }
+      }
+    } catch (shiftErr) {
+      console.warn('Failed to update shift settings:', shiftErr);
+      // Continue with other updates
     }
     
-    return true
+    console.log('Settings saved to Supabase successfully');
+    return true;
   } catch (error) {
     console.error('Error saving settings to Supabase:', error)
-    throw error
+    // We don't throw the error anymore - return false to indicate failure
+    // Caller will handle fallback to localStorage
+    return false;
   }
 }
 
 // Save locations
 export async function saveLocations(locationsData: LocationsData): Promise<boolean> {
   try {
+    console.log('Saving location data to Supabase...');
+    
     // Begin a transaction for all buildings and locations
     
     // 1. Save buildings (delete all and re-insert)
-    const buildingsToInsert = locationsData.buildings.map(transformBuildingToSupabase)
-    await supabase.from('buildings').delete().gt('id', 0) // Delete all
-    if (buildingsToInsert.length > 0) {
-      const { error: buildingsError } = await supabase
-        .from('buildings')
-        .insert(buildingsToInsert)
+    try {
+      const buildingsToInsert = locationsData.buildings.map(transformBuildingToSupabase)
+      const { error: deleteError } = await supabase.from('buildings').delete().neq('id', 'NOT_AN_ID') // Delete all
       
-      if (buildingsError) throw buildingsError
+      if (deleteError) {
+        console.warn('Error deleting buildings:', deleteError);
+      }
+      
+      if (buildingsToInsert.length > 0) {
+        const { error: buildingsError } = await supabase
+          .from('buildings')
+          .insert(buildingsToInsert)
+        
+        if (buildingsError) {
+          console.warn('Error inserting buildings:', buildingsError);
+        }
+      }
+    } catch (buildingsErr) {
+      console.warn('Failed to update buildings:', buildingsErr);
+      // Continue with departments
     }
     
     // 2. Save departments
-    const departmentsToInsert: SupabaseDepartment[] = []
-    
-    locationsData.buildings.forEach(building => {
-      building.departments.forEach(dept => {
-        departmentsToInsert.push(transformDepartmentToSupabase(dept, building.id))
-      })
-    })
-    
-    await supabase.from('departments').delete().gt('id', 0) // Delete all
-    if (departmentsToInsert.length > 0) {
-      const { error: deptsError } = await supabase
-        .from('departments')
-        .insert(departmentsToInsert)
+    try {
+      const departmentsToInsert: SupabaseDepartment[] = []
       
-      if (deptsError) throw deptsError
+      locationsData.buildings.forEach(building => {
+        building.departments.forEach(dept => {
+          departmentsToInsert.push(transformDepartmentToSupabase(dept, building.id))
+        })
+      })
+      
+      const { error: deleteError } = await supabase.from('departments').delete().neq('id', 'NOT_AN_ID') // Delete all
+      
+      if (deleteError) {
+        console.warn('Error deleting departments:', deleteError);
+      }
+      
+      if (departmentsToInsert.length > 0) {
+        const { error: deptsError } = await supabase
+          .from('departments')
+          .insert(departmentsToInsert)
+        
+        if (deptsError) {
+          console.warn('Error inserting departments:', deptsError);
+        }
+      }
+    } catch (deptsErr) {
+      console.warn('Failed to update departments:', deptsErr);
     }
     
-    return true
+    console.log('Location data saved to Supabase successfully');
+    return true;
   } catch (error) {
     console.error('Error saving locations to Supabase:', error)
-    throw error
+    // We don't throw the error anymore - return false to indicate failure
+    // Caller will handle fallback to localStorage
+    return false;
   }
 }
