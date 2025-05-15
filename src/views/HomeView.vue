@@ -7,24 +7,26 @@
     <template v-else>
       <section v-if="isShiftActive && currentShift" class="active-shift">
         <h1>Current Shift</h1>
-        <div class="shift-card">
-          <div class="shift-info">
-            <h2>{{ shiftTitle }}</h2>
-            <div class="shift-supervisor">Supervisor: {{ currentShift.supervisor }}</div>
-          </div>
-          
-          <!-- Porter Selection for Active Shift -->
-          <PorterSelectionForm
-            :available-porters="availablePorters"
-            :assigned-porters="assignedPorters"
-            @add-porter="handleAddPorterToShift"
-            @remove-porter="handleRemovePorterFromShift"
+        
+        <!-- Current shift overview -->
+        <ShiftOverview 
+          :shift="currentShift" 
+          :showEndButton="false"
+        />
+        
+        <!-- Open shift button -->
+        <div class="shift-actions">
+          <button class="btn-primary" @click="safeNavigate('tasks')">Open Shift</button>
+        </div>
+        
+        <!-- Previous shift summary (if available) -->
+        <div v-if="previousShift" class="previous-shift">
+          <h2>Previous Shift</h2>
+          <ShiftOverview 
+            :shift="previousShift" 
+            :showEndButton="false"
+            variant="previous"
           />
-          
-          <div class="shift-actions">
-            <button class="btn-primary" @click="safeNavigate('tasks')">View Tasks</button>
-            <button class="btn-danger" @click="endCurrentShift">End Shift</button>
-          </div>
         </div>
       </section>
       
@@ -80,8 +82,9 @@ import { ref, computed, inject, onMounted } from 'vue'
 import { useShiftStore } from '../stores/shift'
 import { useSettingsStore } from '../stores/settings'
 import { formatDate, formatTime } from '../utils/date'
-import type { RouteParams, ShiftType } from '../types'
+import type { RouteParams, ShiftType, Shift } from '../types'
 import LoadingSpinner from '../components/LoadingSpinner.vue'
+import ShiftOverview from '../components/ShiftOverview.vue'
 import PorterSelectionForm from '../components/porter/PorterSelectionForm.vue'
 
 // Router injection
@@ -124,24 +127,20 @@ const allPorters = computed(() => {
 const supervisor = ref('')
 const initialPorters = ref<string[]>([])
 
-// Computed
-const shiftTitle = computed(() => {
-  if (!currentShift.value) return ''
+// Get the most recent archived shift (if any)
+const previousShift = computed(() => {
+  const archived = shiftStore.archivedShifts;
+  if (!archived || archived.length === 0) return null;
   
-  const date = new Date(currentShift.value.date)
-  return `${formatDate(date)}`
-})
-
-// Porter management for active shift
-const assignedPorters = computed(() => {
-  if (!currentShift.value || !currentShift.value.assignedPorters) return []
-  return currentShift.value.assignedPorters
-})
-
-const availablePorters = computed(() => {
-  // Filter out porters that are already assigned
-  return allPorters.value.filter(porter => !assignedPorters.value.includes(porter))
-})
+  // Sort by date (most recent first)
+  const sorted = [...archived].sort((a, b) => {
+    const dateA = new Date(a.date).getTime();
+    const dateB = new Date(b.date).getTime();
+    return dateB - dateA;
+  });
+  
+  return sorted[0];
+});
 
 // Methods
 const startSpecificShift = async (type: ShiftType) => {
@@ -187,22 +186,6 @@ const handleRemoveInitialPorter = (porter: string) => {
   }
 }
 
-// Porter assignment during shift
-const handleAddPorterToShift = async (porter: string) => {
-  try {
-    await addPorterToShift(porter)
-  } catch (error) {
-    console.error('Error adding porter to shift:', error)
-  }
-}
-
-const handleRemovePorterFromShift = async (porter: string) => {
-  try {
-    await removePorterFromShift(porter)
-  } catch (error) {
-    console.error('Error removing porter from shift:', error)
-  }
-}
 
 const endCurrentShift = async () => {
   try {

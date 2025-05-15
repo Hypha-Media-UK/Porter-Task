@@ -6,33 +6,12 @@
     
     <section v-if="currentShift" class="shift-dashboard">
       <!-- Shift Overview Card -->
-      <div class="dashboard-card shift-overview">
-        <div class="card-header">
-          <div class="title-area">
-            <h2 :class="currentShift.type.toLowerCase() + '-text'">{{ currentShift.type }} Shift</h2>
-          </div>
-          <button class="btn-danger" @click="confirmEndShift">
-            End Shift
-          </button>
-        </div>
-        
-        <div class="card-content">
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Date</span>
-              <span class="info-value">{{ formatDate(new Date(currentShift.date)) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Start Time</span>
-              <span class="info-value">{{ formatTime(new Date(currentShift.startTime)) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Supervisor</span>
-              <span class="info-value">{{ currentShift.supervisor }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ShiftOverview 
+        :shift="currentShift" 
+        :showEndButton="true"
+        variant="current"
+        @end-shift="confirmEndShift"
+      />
       
       <!-- Navigation Tabs -->
       <div class="tabs-container">
@@ -417,6 +396,7 @@ import type { RouteParams, PorterAssignment } from '../types'
 import TaskCard from '../components/TaskCard.vue'
 import PorterAssignmentManager from '../components/porter/PorterAssignmentManager.vue'
 import PorterAssignmentModal from '../components/porter/PorterAssignmentModal.vue'
+import ShiftOverview from '../components/ShiftOverview.vue'
 
 // Router injection
 const navigate = inject<(route: string, params?: RouteParams) => void>('navigate')
@@ -713,15 +693,13 @@ const openAssignPorter = (porterId: string) => {
   // Open assignment modal for the selected porter
   showAssignmentModal.value = true;
   
-  // Pre-select this porter in the form
-  if (!editingAssignment.value) {
-    editingAssignment.value = {
-      id: '',
-      porterId: porterId,
-      departmentId: '',
-      startTime: new Date().toISOString()
-    };
-  }
+  // Create a new assignment for this porter
+  editingAssignment.value = {
+    id: '',
+    porterId: porterId,
+    departmentId: '',
+    startTime: new Date().toISOString()
+  };
 };
 
 const editAssignment = (assignment: PorterAssignment) => {
@@ -745,8 +723,8 @@ const saveAssignment = (assignmentData: {
   try {
     if (assignmentData.id) {
       // Update existing assignment
+      // Note: We don't update porterId since that's a core identifier
       shiftStore.updatePorterAssignment(assignmentData.id, {
-        porterId: assignmentData.porterId,
         departmentId: assignmentData.departmentId,
         startTime: assignmentData.startTime,
         endTime: assignmentData.endTime,
@@ -776,7 +754,7 @@ const saveAssignment = (assignmentData: {
 const confirmDeleteAssignment = () => {
   if (deletingAssignment.value) {
     try {
-      shiftStore.removePorterAssignment(deletingAssignment.value.id);
+      shiftStore.deletePorterAssignment(deletingAssignment.value.id);
       showDeleteConfirm.value = false;
       deletingAssignment.value = undefined;
       refreshKey.value++;
