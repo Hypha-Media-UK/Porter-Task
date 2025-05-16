@@ -51,76 +51,103 @@ export async function addJobCategoryDefaults(): Promise<boolean> {
   try {
     console.log('Adding job category default locations...')
     
-    // Check if specimen delivery default already exists
+    // Import transform function to properly format for database
+    const { transformJobCategoryDefaultToSupabase } = await import('./settingsService')
+    
+    // Define our default job category defaults (using application camelCase format)
+    const defaultLocations = [
+      // Specimen Delivery always goes to Pathology in New Fountain House
+      {
+        category: 'Specimen Delivery',
+        itemType: undefined, // For all items in this category
+        fromBuildingId: undefined,  // No specific from location
+        fromLocationId: undefined,
+        toBuildingId: 'new-fountain-house', 
+        toLocationId: 'pathology'
+      },
+      // Patient Transport origin is often A+E
+      {
+        category: 'Patient Transport',
+        itemType: undefined, // For all items in this category
+        fromBuildingId: 'main-hospital',  
+        fromLocationId: 'accident-and-emergency',
+        toBuildingId: undefined, 
+        toLocationId: undefined
+      },
+      // Blood always comes from Blood Bank
+      {
+        category: 'Blood',
+        itemType: undefined, // For all items in this category
+        fromBuildingId: 'main-hospital',  
+        fromLocationId: 'blood-bank',
+        toBuildingId: undefined, 
+        toLocationId: undefined
+      },
+      // Notes have a common flow pattern
+      {
+        category: 'Notes',
+        itemType: undefined, // For all items in this category
+        fromBuildingId: 'main-hospital',  
+        fromLocationId: 'medical-records',
+        toBuildingId: undefined, 
+        toLocationId: undefined
+      },
+      // Equipment is often from Medical Engineering
+      {
+        category: 'Equipment',
+        itemType: undefined, // For all items in this category
+        fromBuildingId: 'support-services',  
+        fromLocationId: 'medical-engineering',
+        toBuildingId: undefined, 
+        toLocationId: undefined
+      }
+    ];
+    
+    // First, check if we have any defaults already
     const { data: existingDefaults, error: checkError } = await supabase
       .from('job_category_defaults')
-      .select('*')
-      .eq('category', 'Specimen Delivery')
+      .select('category, item_type')
     
     if (checkError) {
       console.error('Error checking for existing defaults:', checkError)
       return false
     }
     
-    // If default already exists, no need to add it again
+    // Filter out any defaults that already exist
+    const existingKeys = new Set();
     if (existingDefaults && existingDefaults.length > 0) {
-      console.log('Default location for Specimen Delivery already exists')
-      return true
+      existingDefaults.forEach(def => {
+        const key = `${def.category}:${def.item_type || ''}`;
+        existingKeys.add(key);
+      });
     }
     
-    // First, verify the building and department exist
-    const buildingId = 'new-fountain-house';
-    const departmentId = 'pathology';
+    // Transform to the correct database format (snake_case)
+    const newDefaultsToInsert = defaultLocations
+      .filter(def => {
+        const key = `${def.category}:${def.itemType || ''}`;
+        return !existingKeys.has(key);
+      })
+      .map(def => transformJobCategoryDefaultToSupabase(def));
     
-    const { data: buildings } = await supabase
-      .from('buildings')
-      .select('id')
-      .eq('id', buildingId)
-    
-    const { data: departments } = await supabase
-      .from('departments')
-      .select('id, building_id')
-      .eq('id', departmentId)
-    
-    // If either the building or department doesn't exist, log an error and return
-    if (!buildings || buildings.length === 0) {
-      console.error(`Building with ID "${buildingId}" not found`)
-      return false
+    if (newDefaultsToInsert.length === 0) {
+      console.log('All default locations already exist in database');
+      return true;
     }
     
-    if (!departments || departments.length === 0) {
-      console.error(`Department with ID "${departmentId}" not found`)
-      return false
-    }
+    console.log(`Adding ${newDefaultsToInsert.length} new default locations`);
     
-    // Check if the department is in the expected building
-    const department = departments[0];
-    if (department.building_id !== buildingId) {
-      console.warn(`Department "${departmentId}" exists but is in building "${department.building_id}", not "${buildingId}" as expected`);
-      // Continue anyway as we'll use the correct building ID
-    }
-    
-    // Create default for Specimen Delivery
+    // Insert all new defaults in one operation
     const { error } = await supabase
       .from('job_category_defaults')
-      .insert([
-        {
-          id: nanoid(),
-          category: 'Specimen Delivery',
-          item_type: null, // For all items in this category
-          from_building_id: null,  // No specific from location
-          from_location_id: null,
-          to_building_id: 'new-fountain-house', // Pathology is in New Fountain House
-          to_location_id: 'pathology'
-        }
-      ])
+      .insert(newDefaultsToInsert)
     
     if (error) {
       console.error('Error adding job category defaults:', error)
       return false
     }
     
-    console.log('Successfully added job category default locations')
+    console.log(`Successfully added ${newDefaultsToInsert.length} job category default locations`)
     return true
   } catch (error) {
     console.error('Error adding job category defaults:', error)
@@ -137,7 +164,10 @@ export async function seedDatabase(): Promise<boolean> {
     
     // If there's already data in the key tables, assume the database is seeded
     if (!needsSeeding) {
-      console.log('Database already has data, skipping seed')
+      console.log('Database already contains data, no need to seed.')
+      
+      // Even if database is seeded, make sure we have job category defaults
+      await addJobCategoryDefaults()
       return true
     }
     

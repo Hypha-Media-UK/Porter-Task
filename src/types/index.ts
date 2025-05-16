@@ -115,7 +115,6 @@ export interface SupabaseShift {
   supervisor: string;
   start_time: string;
   end_time: string | null;
-  is_active?: boolean;
   created_at?: string;
 }
 
@@ -176,7 +175,6 @@ export interface Shift {
   supervisor: Supervisor;
   startTime: string; // ISO string
   endTime?: string; // ISO string, optional if shift is still ongoing
-  isActive?: boolean; // Flag indicating if this is the currently active shift
   tasks: Task[];
   assignedPorters?: Porter[]; // Porters assigned to this shift
   porterAssignments?: PorterAssignment[];  // Department assignments for porters

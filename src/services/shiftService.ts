@@ -14,7 +14,6 @@ export function transformShiftFromSupabase(data: any): Shift | null {
     supervisor: data.supervisor,
     startTime: data.start_time,
     endTime: data.end_time,
-    isActive: data.is_active || false,
     tasks: [], // Will be filled later if tasks are included
     assignedPorters: [], // Will be filled if porter_assignments are included
     porterAssignments: [] // Will be filled if porter_assignments are included
@@ -81,53 +80,29 @@ export function transformShiftToSupabase(shift: Shift): SupabaseShift {
     type: shift.type,
     supervisor: shift.supervisor,
     start_time: shift.startTime,
-    end_time: shift.endTime || null,
-    is_active: shift.isActive
+    end_time: shift.endTime || null
   }
 }
 
-// Get current active shift (using is_active flag)
+// Get current active shift (no end_time)
 export async function getCurrentShift() {
-  try {
-    console.log('Fetching current active shift from database...');
-    
-    const { data, error } = await supabase
-      .from('shifts')
-      .select(`
-        *,
-        tasks(*),
-        shift_assigned_porters(*),
-        porter_assignments(*)
-      `)
-      .eq('is_active', true)
-      .maybeSingle()
-    
-    if (error) {
-      console.error('Error fetching current shift:', error)
-      return null
-    }
-    
-    // Check if we have a valid shift
-    if (data) {
-      console.log('Active shift found:', data.id);
-      const transformedShift = transformShiftFromSupabase(data);
-      
-      // Make sure sessionStorage is updated with this shift
-      if (transformedShift?.id) {
-        sessionStorage.setItem('porter-track-current-shift-id', transformedShift.id);
-      }
-      
-      return transformedShift;
-    } else {
-      console.log('No active shift found in database');
-      // Clear any stale session data
-      sessionStorage.removeItem('porter-track-current-shift-id');
-      return null;
-    }
-  } catch (err) {
-    console.error('Unexpected error fetching current shift:', err);
-    return null;
+  const { data, error } = await supabase
+    .from('shifts')
+    .select(`
+      *,
+      tasks(*),
+      shift_assigned_porters(*),
+      porter_assignments(*)
+    `)
+    .is('end_time', null)
+    .maybeSingle()
+  
+  if (error) {
+    console.error('Error fetching current shift:', error)
+    return null
   }
+  
+  return transformShiftFromSupabase(data)
 }
 
 // Get all archived shifts (with end_time)
@@ -173,54 +148,23 @@ export async function createShift(shiftData: {
   supervisor: string, 
   startTime: string 
 }) {
-  // First, let's handle any existing active shifts to avoid conflicts
-  try {
-    const { data: activeShifts } = await supabase
-      .from('shifts')
-      .select('id')
-      .eq('is_active', true)
-      .limit(10);
-      
-    if (activeShifts && activeShifts.length > 0) {
-      console.log('Found existing active shifts, deactivating:', activeShifts.length);
-      
-      // Deactivate all existing active shifts
-      const { error: deactivateError } = await supabase
-        .from('shifts')
-        .update({ is_active: false })
-        .in('id', activeShifts.map(s => s.id));
-        
-      if (deactivateError) {
-        console.warn('Failed to deactivate old shifts, but continuing:', deactivateError);
-      }
-    }
-  } catch (err) {
-    console.warn('Error checking for active shifts, continuing anyway:', err);
-  }
-  
-  // Now create the new shift
   const newShift: SupabaseShift = {
     id: nanoid(),
     date: shiftData.date,
     type: shiftData.type,
     supervisor: shiftData.supervisor,
     start_time: shiftData.startTime,
-    end_time: null,
-    is_active: true // Mark as active when creating a new shift
+    end_time: null
   }
   
   const { data, error } = await supabase
     .from('shifts')
     .insert(newShift)
     .select('*')
-    .single();
+    .single()
   
-  if (error) {
-    console.error('Error creating shift in Supabase:', error);
-    throw error;
-  }
+  if (error) throw error
   
-  // Return a proper Shift object with the appropriate structure
   return {
     id: data.id,
     date: data.date,
@@ -228,7 +172,6 @@ export async function createShift(shiftData: {
     supervisor: data.supervisor,
     startTime: data.start_time,
     endTime: data.end_time,
-    isActive: data.is_active || true, // Ensure isActive is set
     tasks: []
   }
 }
@@ -237,10 +180,7 @@ export async function createShift(shiftData: {
 export async function endShift(shiftId: string, endTime: string) {
   const { error } = await supabase
     .from('shifts')
-    .update({ 
-      end_time: endTime,
-      is_active: false // Set active flag to false when ending a shift
-    })
+    .update({ end_time: endTime })
     .eq('id', shiftId)
   
   if (error) throw error
@@ -252,10 +192,7 @@ export async function endShift(shiftId: string, endTime: string) {
 export async function reopenShift(shiftId: string) {
   const { error } = await supabase
     .from('shifts')
-    .update({ 
-      end_time: null,
-      is_active: true // Set active flag to true when reopening
-    })
+    .update({ end_time: null })
     .eq('id', shiftId)
   
   if (error) throw error

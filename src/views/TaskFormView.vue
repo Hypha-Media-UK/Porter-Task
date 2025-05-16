@@ -521,33 +521,36 @@ const formData = ref<{
 const applyDefaultLocations = () => {
   if (!formData.value.jobCategory) return;
   
-  // Find default locations for this job category and item type
-  console.log(`Looking for default locations for category: ${formData.value.jobCategory}, item: ${formData.value.itemType || 'any'}`);
-  console.log(`All job category defaults:`, settingsStore.jobCategoryDefaults);
+  // ENHANCED LOGGING FOR DEBUGGING
+  console.groupCollapsed(`🔍 Looking for default locations for category: ${formData.value.jobCategory}, item: ${formData.value.itemType || 'any'}`);
+  console.log(`Available job category defaults:`, settingsStore.jobCategoryDefaults);
+  console.log(`Available locations:`, allLocations.value);
   
-  // MANUAL DEFAULT: If Specimen Delivery is selected, set the destination to Pathology
+  // Check if we need the hardcoded default for Specimen Delivery
+  // We'll leave this in as a fallback even with the database defaults
   if (formData.value.jobCategory === 'Specimen Delivery') {
-    console.log('Applying hardcoded default for Specimen Delivery: Pathology in New Fountain House');
+    console.log('⚠️ Checking hardcoded default for Specimen Delivery: Pathology in New Fountain House');
     const pathologyLocation = allLocations.value.find(
       loc => loc.buildingId === 'new-fountain-house' && loc.id === 'pathology'
     );
     
     if (pathologyLocation) {
-      console.log('Found Pathology location:', pathologyLocation);
+      console.log('✅ Found Pathology location:', pathologyLocation);
       selectedToLocation.value = pathologyLocation;
+      console.groupEnd();
+      return;
     } else {
-      console.warn('Could not find Pathology location in New Fountain House');
+      console.warn('❌ Could not find Pathology location in New Fountain House');
+      // Continue to try other methods if hardcoded default fails
     }
-    
-    // Return early as we've applied our manual default
-    return;
   }
   
-  // For other categories, continue with the normal flow
+  // For all categories, try to get defaults from the database
   // First try to get item-specific defaults
   let defaultLocation: JobCategoryDefault | undefined;
   
   if (formData.value.itemType) {
+    console.log(`🔎 Looking for item-specific defaults for ${formData.value.itemType}`);
     defaultLocation = settingsStore.getJobCategoryDefault(
       formData.value.jobCategory, 
       formData.value.itemType
@@ -557,17 +560,17 @@ const applyDefaultLocations = () => {
   
   // If no item-specific defaults found, try category-level defaults
   if (!defaultLocation) {
+    console.log(`🔎 Looking for category-level defaults for ${formData.value.jobCategory}`);
     defaultLocation = settingsStore.getJobCategoryDefault(formData.value.jobCategory);
     console.log(`Category-level default search result:`, defaultLocation);
   }
   
   if (defaultLocation) {
-    console.log('Found default locations:', defaultLocation);
+    console.log('✅ Found default locations:', defaultLocation);
     
     // Apply from (origin) location if available
     if (defaultLocation.fromBuildingId && defaultLocation.fromLocationId) {
-      console.log(`Looking for fromLocation with buildingId=${defaultLocation.fromBuildingId} and id=${defaultLocation.fromLocationId}`);
-      console.log(`Available locations:`, allLocations.value);
+      console.log(`🔎 Looking for fromLocation with buildingId=${defaultLocation.fromBuildingId} and id=${defaultLocation.fromLocationId}`);
       
       const fromLocation = allLocations.value.find(
         loc => loc.buildingId === defaultLocation.fromBuildingId && 
@@ -575,16 +578,24 @@ const applyDefaultLocations = () => {
       );
       
       if (fromLocation) {
-        console.log('Applying default FROM location:', fromLocation);
+        console.log('✅ Applying default FROM location:', fromLocation);
         selectedFromLocation.value = fromLocation;
       } else {
-        console.warn(`Could not find matching fromLocation for default:`, defaultLocation.fromBuildingId, defaultLocation.fromLocationId);
+        console.warn(`❌ Could not find matching fromLocation for default: building=${defaultLocation.fromBuildingId}, location=${defaultLocation.fromLocationId}`);
+        // Try fuzzy matching by building only
+        const buildingMatches = allLocations.value.filter(
+          loc => loc.buildingId === defaultLocation.fromBuildingId
+        );
+        if (buildingMatches.length > 0) {
+          console.log(`Found ${buildingMatches.length} locations in the specified building:`, 
+            buildingMatches.map(l => `${l.id} (${l.name})`).join(', '));
+        }
       }
     }
     
     // Apply to (destination) location if available
     if (defaultLocation.toBuildingId && defaultLocation.toLocationId) {
-      console.log(`Looking for toLocation with buildingId=${defaultLocation.toBuildingId} and id=${defaultLocation.toLocationId}`);
+      console.log(`🔎 Looking for toLocation with buildingId=${defaultLocation.toBuildingId} and id=${defaultLocation.toLocationId}`);
       
       const toLocation = allLocations.value.find(
         loc => loc.buildingId === defaultLocation.toBuildingId && 
@@ -592,15 +603,25 @@ const applyDefaultLocations = () => {
       );
       
       if (toLocation) {
-        console.log('Applying default TO location:', toLocation);
+        console.log('✅ Applying default TO location:', toLocation);
         selectedToLocation.value = toLocation;
       } else {
-        console.warn(`Could not find matching toLocation for default:`, defaultLocation.toBuildingId, defaultLocation.toLocationId);
+        console.warn(`❌ Could not find matching toLocation for default: building=${defaultLocation.toBuildingId}, location=${defaultLocation.toLocationId}`);
+        // Try fuzzy matching by building only
+        const buildingMatches = allLocations.value.filter(
+          loc => loc.buildingId === defaultLocation.toBuildingId
+        );
+        if (buildingMatches.length > 0) {
+          console.log(`Found ${buildingMatches.length} locations in the specified building:`, 
+            buildingMatches.map(l => `${l.id} (${l.name})`).join(', '));
+        }
       }
     }
   } else {
-    console.log('No default locations found for this job category/item');
+    console.log('ℹ️ No default locations found for this job category/item');
   }
+  
+  console.groupEnd();
 };
 
 // Watch for changes in job category or item type to apply defaults

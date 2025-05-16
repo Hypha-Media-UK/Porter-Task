@@ -28,7 +28,6 @@ export const useSettingsStore = defineStore('settings', () => {
   })
   const isLoading = ref(false)
   const error = ref<string | null>(null)
-  const isInitialized = ref(false)
   
   /**
    * Initialize settings and location data from API/local storage
@@ -36,7 +35,6 @@ export const useSettingsStore = defineStore('settings', () => {
   async function initialize() {
     isLoading.value = true
     error.value = null
-    isInitialized.value = false
     
     try {
       // Load settings
@@ -45,8 +43,6 @@ export const useSettingsStore = defineStore('settings', () => {
       // Load location data
       await loadLocationData()
       
-      isInitialized.value = true
-      console.log('Settings initialization complete')
       return true
     } catch (err) {
       console.error('Error initializing settings:', err)
@@ -203,32 +199,20 @@ export const useSettingsStore = defineStore('settings', () => {
       
       console.log('Saving settings:', settingsData);
       
-      // First try to save via database service
+      // First try to save to the API
       try {
-        const result = await db.saveSettings(settingsData);
-        if (result) {
-          console.log('Settings saved to database successfully');
-        } else {
-          throw new Error('Database save returned false');
-        }
-      } catch (dbErr) {
-        console.warn('Could not save settings to database:', dbErr);
+        const result = await apiSaveSettings(settingsData);
+        console.log('Settings saved via API:', result);
+      } catch (apiErr) {
+        console.warn('Could not save settings via API:', apiErr);
         
-        // Try the API as a second option
+        // Fallback to localStorage if API save fails
         try {
-          const apiResult = await apiSaveSettings(settingsData);
-          console.log('Settings saved via API:', apiResult);
-        } catch (apiErr) {
-          console.warn('Could not save settings via API:', apiErr);
-          
-          // Fallback to localStorage if both database and API save fail
-          try {
-            localStorage.setItem('porterTrackSettings', JSON.stringify(settingsData));
-            console.log('Settings saved to localStorage as fallback');
-          } catch (localErr) {
-            console.warn('Could not save to localStorage:', localErr);
-            console.info('Changes are in memory only and will be lost on refresh');
-          }
+          localStorage.setItem('porterTrackSettings', JSON.stringify(settingsData));
+          console.log('Settings saved to localStorage as fallback');
+        } catch (localErr) {
+          console.warn('Could not save to localStorage:', localErr);
+          console.info('Changes are in memory only and will be lost on refresh');
         }
       }
       
@@ -236,9 +220,7 @@ export const useSettingsStore = defineStore('settings', () => {
     } catch (err) {
       console.error('Error saving settings:', err);
       error.value = err instanceof Error ? err.message : 'Failed to save settings';
-      // Even if there's an error, we return true because the state has been updated in memory
-      // This prevents UI errors even when persistence fails
-      return true;
+      return false;
     }
   }
   
@@ -822,7 +804,6 @@ export const useSettingsStore = defineStore('settings', () => {
     shifts,
     isLoading,
     error,
-    isInitialized,
     
     // Actions
     initialize,

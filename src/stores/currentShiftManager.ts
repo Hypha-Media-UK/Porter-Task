@@ -16,16 +16,7 @@ import {
  */
 export async function startShift(type: ShiftType, supervisor: string): Promise<Shift> {
   if (currentShift.value) {
-    console.warn('Attempting to start a new shift when one appears to be active already')
-    
-    // Check if it's really active or just a stale reference
-    if (currentShift.value.isActive === true) {
-      throw new Error('Cannot start a new shift while one is already active')
-    } else {
-      // Clear the stale shift
-      currentShift.value = null
-      clearCurrentShiftFromLocalStorage()
-    }
+    throw new Error('Cannot start a new shift while one is already active')
   }
   
   const now = new Date()
@@ -48,7 +39,6 @@ export async function startShift(type: ShiftType, supervisor: string): Promise<S
     type,
     supervisor,
     startTime: now.toISOString(),
-    isActive: true, // Set this explicitly
     tasks: [],
     assignedPorters: [],
     porterAssignments: []
@@ -57,21 +47,24 @@ export async function startShift(type: ShiftType, supervisor: string): Promise<S
   let dbSuccess = false;
   
   try {
-    // Log the start of this operation for debugging
-    console.log('Starting new shift with supervisor:', supervisor);
-    
     // Create the shift in the database
     const shift = await db.createShift(shiftData)
     
-    // Set as current shift, ensuring all required arrays exist
-    // We don't need to manually add arrays as the service now handles this
-    currentShift.value = shift
+    // Set as current shift with defaults for arrays
+    const newShift: Shift = {
+      ...shift,
+      assignedPorters: [],
+      porterAssignments: [],
+      tasks: []
+    }
+    
+    currentShift.value = newShift
     dbSuccess = true;
     
     // Save to localStorage as fallback
     saveCurrentShiftToLocalStorage()
     
-    console.log('Shift started successfully:', currentShift.value)
+    console.log('Shift started:', currentShift.value)
     
     return currentShift.value
   } catch (err) {

@@ -5,7 +5,7 @@
     </div>
     
     <template v-else>
-      <section v-if="isShiftDataReady && isShiftActive && currentShift" class="active-shift">
+      <section v-if="isShiftActive && currentShift" class="active-shift">
         <h1>Current Shift</h1>
         
         <!-- Current shift overview -->
@@ -78,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, inject, onMounted, watch } from 'vue'
+import { ref, computed, inject, onMounted } from 'vue'
 import { useShiftStore } from '../stores/shift'
 import { useSettingsStore } from '../stores/settings'
 import { formatDate, formatTime } from '../utils/date'
@@ -108,22 +108,11 @@ const {
   endShift,
   addPorterToShift,
   removePorterFromShift,
-  loadShiftData,
-  isLoaded
+  loadShiftData
 } = shiftStore
 
 // Loading state
 const isLoading = ref(true)
-
-// Data ready status - both shift and settings are fully loaded
-const isDataReady = computed(() => {
-  return !isLoading.value && settingsStore.isInitialized && isLoaded
-})
-
-// Current shift loading status - ensures shift status is properly determined
-const isShiftDataReady = computed(() => {
-  return isDataReady.value && isShiftActive !== undefined;
-})
 
 // Supervisors and porters lists
 const supervisors = computed(() => {
@@ -197,6 +186,7 @@ const handleRemoveInitialPorter = (porter: string) => {
   }
 }
 
+
 const endCurrentShift = async () => {
   try {
     await endShift()
@@ -208,22 +198,14 @@ const endCurrentShift = async () => {
   }
 }
 
-// Initialize data with more robust loading sequence
+// Initialize data
 onMounted(async () => {
   try {
-    isLoading.value = true
-    
     // Load settings data
     await settingsStore.initialize()
     
-    // Load shift data - ensure we have the most updated data
+    // Load shift data
     await loadShiftData()
-    
-    // Verify the data was properly loaded and log the current state
-    console.log('HomeView - Data initialization complete:')
-    console.log('- Settings initialized:', settingsStore.isInitialized)
-    console.log('- Shift data loaded:', isLoaded)
-    console.log('- Current shift status:', isShiftActive ? 'Active' : 'None')
     
     // Set default supervisor if available
     if (supervisors.value.length > 0) {
@@ -232,34 +214,9 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error initializing home view:', error)
   } finally {
-    // Longer delay to ensure all reactivity has time to fully update
-    // This is important for the shift status to be correctly determined
-    setTimeout(async () => {
-      // Double-check shift status one more time
-      if (settingsStore.isInitialized && !isLoaded) {
-        console.log('Performing additional shift data check...')
-        await loadShiftData()
-      }
-      
-      // Log the final state before revealing UI
-      console.log('Final shift status check:', isShiftActive ? 'Active' : 'None')
-      isLoading.value = false
-    }, 500)
+    isLoading.value = false
   }
 })
-
-// Watch for changes to shift data after initial load
-watch(() => {
-  // Return computed values that are safe to watch
-  return {
-    isActive: isShiftActive,
-    shift: currentShift
-  }
-}, (newValues) => {
-  if (!isLoading.value) {
-    console.log('HomeView - Shift status changed:', newValues.isActive ? 'Active' : 'None')
-  }
-}, { deep: true })
 </script>
 
 <style scoped>
