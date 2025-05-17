@@ -367,26 +367,24 @@ function openModal(type: string, title: string, item: any = null) {
       case 'supervisor':
       case 'porter':
       case 'building':
-      case 'department':
-      case 'designationDept':
         modalFormData.name = item.name || item
+        break
+      case 'department':
+        modalFormData.name = item.name || ''
+        modalFormData.buildingId = item.buildingId || ''
+        modalFormData.frequent = !!item.frequent
+        break
+      case 'designationDept':
+        modalFormData.name = item.name || ''
+        modalFormData.color = item.color || '#0066cc'
         break
       case 'jobCategory':
         modalFormData.name = item
         break
       case 'jobItem':
-        modalFormData.category = item.category
-        modalFormData.itemType = item.itemType
+        modalFormData.category = item.category || ''
+        modalFormData.itemType = item.itemType || ''
         break
-    }
-    
-    if (type === 'designationDept') {
-      modalFormData.color = item.color
-    }
-    
-    if (type === 'department') {
-      modalFormData.buildingId = item.buildingId
-      modalFormData.frequent = !!item.frequent
     }
   } else if (type === 'department') {
     // Set default building ID if adding a new department
@@ -396,6 +394,9 @@ function openModal(type: string, title: string, item: any = null) {
     const categories = Object.keys(jobCategories.value)
     modalFormData.category = categories.length > 0 ? categories[0] : ''
   }
+  
+  // Debug form data
+  console.log('Opening modal with data:', { type, modalFormData, item });
   
   showModal.value = true
 }
