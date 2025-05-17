@@ -526,22 +526,37 @@ const applyDefaultLocations = () => {
   console.log(`Available job category defaults:`, settingsStore.jobCategoryDefaults);
   console.log(`Available locations:`, allLocations.value);
   
-  // Check if we need the hardcoded default for Specimen Delivery
-  // We'll leave this in as a fallback even with the database defaults
+  // Check if we need the fallback default for Specimen Delivery
+  // Look for location by name instead of hardcoded IDs
   if (formData.value.jobCategory === 'Specimen Delivery') {
-    console.log('⚠️ Checking hardcoded default for Specimen Delivery: Pathology in New Fountain House');
-    const pathologyLocation = allLocations.value.find(
-      loc => loc.buildingId === 'new-fountain-house' && loc.id === 'pathology'
+    console.log('⚠️ Checking fallback default for Specimen Delivery: Pathology in New Fountain House');
+    
+    // Find the building by name first
+    const newFountainHouse = buildings.find(b => 
+      b.name.toLowerCase().includes('new fountain house')
     );
     
-    if (pathologyLocation) {
-      console.log('✅ Found Pathology location:', pathologyLocation);
-      selectedToLocation.value = pathologyLocation;
-      console.groupEnd();
-      return;
+    if (newFountainHouse) {
+      console.log('Found building:', newFountainHouse.name);
+      
+      // Find the pathology department in this building
+      const pathologyLocation = allLocations.value.find(
+        loc => loc.buildingId === newFountainHouse.id && 
+              loc.name.toLowerCase().includes('pathology')
+      );
+      
+      if (pathologyLocation) {
+        console.log('✅ Found Pathology location:', pathologyLocation);
+        selectedToLocation.value = pathologyLocation;
+        console.groupEnd();
+        return;
+      } else {
+        console.warn('❌ Could not find Pathology department in', newFountainHouse.name);
+        // Continue to try other methods if fallback default fails
+      }
     } else {
-      console.warn('❌ Could not find Pathology location in New Fountain House');
-      // Continue to try other methods if hardcoded default fails
+      console.warn('❌ Could not find New Fountain House building');
+      // Continue to try other methods if fallback default fails
     }
   }
   

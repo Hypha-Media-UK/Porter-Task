@@ -54,56 +54,135 @@ export async function addJobCategoryDefaults(): Promise<boolean> {
     // Import transform function to properly format for database
     const { transformJobCategoryDefaultToSupabase } = await import('./settingsService')
     
-    // Define our default job category defaults (using application camelCase format)
-    const defaultLocations = [
-      // Specimen Delivery always goes to Pathology in New Fountain House
+    // First, get all buildings and departments from the database
+    const { data: buildings, error: buildingsError } = await supabase
+      .from('buildings')
+      .select('id, name')
+    
+    if (buildingsError) {
+      console.error('Error fetching buildings:', buildingsError)
+      return false
+    }
+    
+    const { data: departments, error: departmentsError } = await supabase
+      .from('departments')
+      .select('id, building_id, name')
+    
+    if (departmentsError) {
+      console.error('Error fetching departments:', departmentsError)
+      return false
+    }
+    
+    // Create maps for looking up buildings and departments by name
+    const buildingsByName = new Map()
+    buildings.forEach(building => {
+      buildingsByName.set(building.name.toLowerCase(), building.id)
+    })
+    
+    // Map to find departments by [buildingId, departmentName]
+    const departmentsByName = new Map()
+    departments.forEach(department => {
+      const buildingId = department.building_id
+      const deptName = department.name.toLowerCase()
+      const key = `${buildingId}:${deptName}`
+      departmentsByName.set(key, department.id)
+    })
+    
+    // Function to lookup department ID
+    const findDepartmentId = (buildingId: string, departmentName: string): string | undefined => {
+      if (!buildingId || !departmentName) return undefined
+      const key = `${buildingId}:${departmentName.toLowerCase()}`
+      return departmentsByName.get(key)
+    }
+    
+    // Define default locations with names, not IDs
+    const defaultLocationsConfig = [
       {
         category: 'Specimen Delivery',
-        itemType: undefined, // For all items in this category
-        fromBuildingId: undefined,  // No specific from location
-        fromLocationId: undefined,
-        toBuildingId: 'new-fountain-house', 
-        toLocationId: 'pathology'
+        toBuilding: 'New Fountain House',
+        toDepartment: 'Pathology'
       },
-      // Patient Transport origin is often A+E
       {
         category: 'Patient Transport',
-        itemType: undefined, // For all items in this category
-        fromBuildingId: 'main-hospital',  
-        fromLocationId: 'accident-and-emergency',
-        toBuildingId: undefined, 
-        toLocationId: undefined
+        fromBuilding: 'Main Hospital',
+        fromDepartment: 'Accident and Emergency'
       },
-      // Blood always comes from Blood Bank
       {
         category: 'Blood',
-        itemType: undefined, // For all items in this category
-        fromBuildingId: 'main-hospital',  
-        fromLocationId: 'blood-bank',
-        toBuildingId: undefined, 
-        toLocationId: undefined
+        fromBuilding: 'Main Hospital',
+        fromDepartment: 'Blood Bank'
       },
-      // Notes have a common flow pattern
       {
         category: 'Notes',
-        itemType: undefined, // For all items in this category
-        fromBuildingId: 'main-hospital',  
-        fromLocationId: 'medical-records',
-        toBuildingId: undefined, 
-        toLocationId: undefined
+        fromBuilding: 'Main Hospital',
+        fromDepartment: 'Medical Records'
       },
-      // Equipment is often from Medical Engineering
       {
         category: 'Equipment',
-        itemType: undefined, // For all items in this category
-        fromBuildingId: 'support-services',  
-        fromLocationId: 'medical-engineering',
-        toBuildingId: undefined, 
-        toLocationId: undefined
+        fromBuilding: 'Support Services',
+        fromDepartment: 'Medical Engineering'
       }
-    ];
+    ]
     
-    // First, check if we have any defaults already
+    // Convert the config to actual IDs based on what's in the database
+    const defaultLocations = defaultLocationsConfig.map(config => {
+      const result: any = {
+        category: config.category,
+        itemType: undefined
+      }
+      
+      // Set the from location if building exists
+      if (config.fromBuilding) {
+        const fromBuildingId = buildingsByName.get(config.fromBuilding.toLowerCase())
+        if (fromBuildingId) {
+          result.fromBuildingId = fromBuildingId
+          
+          // Only set department if building exists
+          if (config.fromDepartment) {
+            const fromDeptId = findDepartmentId(fromBuildingId, config.fromDepartment)
+            if (fromDeptId) {
+              result.fromLocationId = fromDeptId
+            } else {
+              console.warn(`Department "${config.fromDepartment}" not found in building "${config.fromBuilding}"`)
+            }
+          }
+        } else {
+          console.warn(`Building "${config.fromBuilding}" not found in database`)
+        }
+      }
+      
+      // Set the to location if building exists
+      if (config.toBuilding) {
+        const toBuildingId = buildingsByName.get(config.toBuilding.toLowerCase())
+        if (toBuildingId) {
+          result.toBuildingId = toBuildingId
+          
+          // Only set department if building exists
+          if (config.toDepartment) {
+            const toDeptId = findDepartmentId(toBuildingId, config.toDepartment)
+            if (toDeptId) {
+              result.toLocationId = toDeptId
+            } else {
+              console.warn(`Department "${config.toDepartment}" not found in building "${config.toBuilding}"`)
+            }
+          }
+        } else {
+          console.warn(`Building "${config.toBuilding}" not found in database`)
+        }
+      }
+      
+      return result
+    }).filter(def => 
+      // Only include defaults where at least one location was found
+      (def.fromBuildingId && def.fromLocationId) || (def.toBuildingId && def.toLocationId)
+    )
+    
+    if (defaultLocations.length === 0) {
+      console.log('No valid default locations could be created - buildings/departments may not exist yet')
+      return true
+    }
+    
+    // Check if we have any defaults already
     const { data: existingDefaults, error: checkError } = await supabase
       .from('job_category_defaults')
       .select('category, item_type')
@@ -114,21 +193,21 @@ export async function addJobCategoryDefaults(): Promise<boolean> {
     }
     
     // Filter out any defaults that already exist
-    const existingKeys = new Set();
+    const existingKeys = new Set()
     if (existingDefaults && existingDefaults.length > 0) {
       existingDefaults.forEach(def => {
-        const key = `${def.category}:${def.item_type || ''}`;
-        existingKeys.add(key);
-      });
+        const key = `${def.category}:${def.item_type || ''}`
+        existingKeys.add(key)
+      })
     }
     
-    // Transform to the correct database format (snake_case)
+    // Transform to the correct database format and filter out existing defaults
     const newDefaultsToInsert = defaultLocations
       .filter(def => {
-        const key = `${def.category}:${def.itemType || ''}`;
-        return !existingKeys.has(key);
+        const key = `${def.category}:${def.itemType || ''}`
+        return !existingKeys.has(key)
       })
-      .map(def => transformJobCategoryDefaultToSupabase(def));
+      .map(def => transformJobCategoryDefaultToSupabase(def))
     
     if (newDefaultsToInsert.length === 0) {
       console.log('All default locations already exist in database');

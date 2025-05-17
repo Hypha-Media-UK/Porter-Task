@@ -302,15 +302,169 @@ export async function saveSettings(settings: SettingsData): Promise<boolean> {
       if (categoriesError) throw categoriesError
     }
     
-    // 4. Update job category defaults (delete all and re-insert)
-    const defaultsToInsert = settings.jobCategoryDefaults.map(transformJobCategoryDefaultToSupabase)
-    await supabase.from('job_category_defaults').delete().gt('id', 0) // Delete all
-    if (defaultsToInsert.length > 0) {
-      const { error: defaultsError } = await supabase
-        .from('job_category_defaults')
-        .insert(defaultsToInsert)
+    // 4. Validate and update job category defaults
+    try {
+      console.log('Saving job category defaults...');
       
-      if (defaultsError) throw defaultsError
+      // First get all valid building and department IDs from the database
+      const { data: buildings, error: buildingsError } = await supabase
+        .from('buildings')
+        .select('id');
+      
+      if (buildingsError) {
+        console.error('Error fetching buildings for validation:', buildingsError);
+        throw buildingsError;
+      }
+      
+      const { data: departments, error: departmentsError } = await supabase
+        .from('departments')
+        .select('id, building_id');
+      
+      if (departmentsError) {
+        console.error('Error fetching departments for validation:', departmentsError);
+        throw departmentsError;
+      }
+      
+      // Create sets of valid IDs for quick lookup
+      const validBuildingIds = new Set(buildings.map(b => b.id));
+      const validDepartmentIds = new Set(departments.map(d => d.id));
+      
+      // Create a map of departments to their buildings for validation
+      const departmentToBuildingMap = new Map<string, string>();
+      departments.forEach(d => departmentToBuildingMap.set(d.id, d.building_id));
+      
+      console.log(`Validating ${settings.jobCategoryDefaults.length} job category defaults...`);
+      
+      // Filter and validate defaults before transforming
+      const validDefaults = settings.jobCategoryDefaults.filter(def => {
+        // If no locations are set, it's valid
+        if (!def.fromBuildingId && !def.toBuildingId && !def.fromLocationId && !def.toLocationId) {
+          return true;
+        }
+        
+        // Validate from building and location
+        if (def.fromBuildingId) {
+          // Check if building exists
+          if (!validBuildingIds.has(def.fromBuildingId)) {
+            console.warn(`Invalid fromBuildingId: ${def.fromBuildingId} for category ${def.category}`);
+            return false;
+          }
+          
+          // If location is provided, check if it exists and belongs to the building
+          if (def.fromLocationId) {
+            if (!validDepartmentIds.has(def.fromLocationId)) {
+              console.warn(`Invalid fromLocationId: ${def.fromLocationId} for category ${def.category}`);
+              return false;
+            }
+            
+            // Check if the location belongs to the building
+            if (departmentToBuildingMap.get(def.fromLocationId) !== def.fromBuildingId) {
+              console.warn(`fromLocationId ${def.fromLocationId} does not belong to building ${def.fromBuildingId}`);
+              return false;
+            }
+          }
+        } else if (def.fromLocationId) {
+          // If location is provided without a building, it's invalid
+          console.warn(`fromLocationId provided without fromBuildingId for category ${def.category}`);
+          return false;
+        }
+        
+        // Validate to building and location
+        if (def.toBuildingId) {
+          // Check if building exists
+          if (!validBuildingIds.has(def.toBuildingId)) {
+            console.warn(`Invalid toBuildingId: ${def.toBuildingId} for category ${def.category}`);
+            return false;
+          }
+          
+          // If location is provided, check if it exists and belongs to the building
+          if (def.toLocationId) {
+            if (!validDepartmentIds.has(def.toLocationId)) {
+              console.warn(`Invalid toLocationId: ${def.toLocationId} for category ${def.category}`);
+              return false;
+            }
+            
+            // Check if the location belongs to the building
+            if (departmentToBuildingMap.get(def.toLocationId) !== def.toBuildingId) {
+              console.warn(`toLocationId ${def.toLocationId} does not belong to building ${def.toBuildingId}`);
+              return false;
+            }
+          }
+        } else if (def.toLocationId) {
+          // If location is provided without a building, it's invalid
+          console.warn(`toLocationId provided without toBuildingId for category ${def.category}`);
+          return false;
+        }
+        
+        // If we get here, the default is valid
+        return true;
+      });
+      
+      console.log(`Found ${validDefaults.length} valid defaults out of ${settings.jobCategoryDefaults.length}`);
+      
+      // Transform and insert the valid defaults
+      const defaultsToInsert = validDefaults.map(transformJobCategoryDefaultToSupabase);
+      
+      // Clear existing defaults
+      console.log('Clearing existing job category defaults...');
+      const { error: deleteError } = await supabase
+        .from('job_category_defaults')
+        .delete()
+        .gt('id', '');  // Use a simple condition that matches all rows
+      
+      if (deleteError) {
+        console.error('Error deleting existing defaults:', deleteError);
+        throw deleteError;
+      }
+      
+      // Insert new defaults if we have any
+      if (defaultsToInsert.length > 0) {
+        console.log(`Inserting ${defaultsToInsert.length} job category defaults...`);
+        
+        // Insert in batches to avoid potential issues with large datasets
+        const batchSize = 20;
+        for (let i = 0; i < defaultsToInsert.length; i += batchSize) {
+          const batch = defaultsToInsert.slice(i, i + batchSize);
+          
+          try {
+            const { error: insertError } = await supabase
+              .from('job_category_defaults')
+              .insert(batch);
+            
+            if (insertError) {
+              console.error(`Error inserting batch ${i / batchSize + 1}:`, insertError);
+              throw insertError;
+            }
+            
+            console.log(`Successfully inserted batch ${i / batchSize + 1} of defaults`);
+          } catch (batchError) {
+            console.error(`Failed to insert batch ${i / batchSize + 1}:`, batchError);
+            
+            // Try inserting one by one to isolate problematic records
+            for (const item of batch) {
+              try {
+                const { error: itemError } = await supabase
+                  .from('job_category_defaults')
+                  .insert([item]);
+                
+                if (itemError) {
+                  console.error(`Error inserting item ${item.id}:`, itemError);
+                } else {
+                  console.log(`Successfully inserted item ${item.id}`);
+                }
+              } catch (itemInsertError) {
+                console.error(`Failed to insert item ${item.id}:`, itemInsertError);
+              }
+            }
+          }
+        }
+      }
+      
+      console.log('Job category defaults save complete');
+    } catch (defaultsError) {
+      console.error('Error saving job category defaults:', defaultsError);
+      // Don't rethrow - we want to continue with other settings even if defaults fail
+      console.warn('Continuing with other settings despite defaults save failure');
     }
     
     // 5. Update designation departments (delete all and re-insert)
