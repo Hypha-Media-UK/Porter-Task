@@ -886,11 +886,24 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
   
-  async function updateJobCategoryItem(category: string, oldItemType: string, newItemType: string) {
+  async function updateJobCategoryItem(category: string, oldItemType: string | undefined, newItemType: string) {
     isLoading.value = true;
     error.value = null;
     
     try {
+      // Debug the parameters
+      console.log('Updating job item with params:', { category, oldItemType, newItemType });
+      
+      // If oldItemType is undefined, we're adding a new item rather than updating
+      if (!category) {
+        throw new Error('Category is required for job item operations');
+      }
+      
+      // If there's no oldItemType, we're adding a new item
+      if (!oldItemType) {
+        return await addJobCategoryItem(category, newItemType);
+      }
+      
       // Find the record
       const { data, error: fetchError } = await supabase
         .from('job_categories')
@@ -899,8 +912,16 @@ export const useSettingsStore = defineStore('settings', () => {
         .eq('item_type', oldItemType)
         .single();
       
-      if (fetchError) throw fetchError;
-      if (!data) throw new Error('Job item not found');
+      if (fetchError) {
+        console.error('Error finding job item:', fetchError);
+        throw fetchError;
+      }
+      
+      if (!data || !data.id) {
+        throw new Error(`Job item not found for category: ${category}, type: ${oldItemType}`);
+      }
+      
+      console.log('Found job item with ID:', data.id);
       
       // Update the record
       const { error: updateError } = await supabase

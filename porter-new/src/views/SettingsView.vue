@@ -220,7 +220,7 @@
                     <span v-if="dept.frequent" class="frequent-badge">★</span>
                   </div>
                   <div class="row-actions">
-                    <button class="btn-icon" @click="openModal('department', 'Edit Department', {...dept, buildingId: building.id})">Edit</button>
+                    <button class="btn-icon" @click="openModal('department', 'Edit Department', {id: dept.id, name: dept.name, frequent: dept.frequent, buildingId: building.id})">Edit</button>
                     <button class="btn-icon delete" @click="deleteItem('department', dept)">Delete</button>
                   </div>
                 </div>
@@ -254,8 +254,8 @@
                 <div v-for="item in items" :key="item" class="item-row">
                   <div>{{ item }}</div>
                   <div class="row-actions">
-                    <button class="btn-icon" @click="openModal('jobItem', 'Edit Job Item', {category, itemType: item})">Edit</button>
-                    <button class="btn-icon delete" @click="deleteItem('jobItem', {category, itemType: item})">Delete</button>
+                    <button class="btn-icon" @click="openModal('jobItem', 'Edit Job Item', {category: category, itemType: item})">Edit</button>
+                    <button class="btn-icon delete" @click="deleteItem('jobItem', {category: category, itemType: item})">Delete</button>
                   </div>
                 </div>
                 <button class="btn-secondary add-item" @click="openModal('jobItem', 'Add Job Item', {category})">Add Item Type</button>
@@ -431,13 +431,19 @@ async function saveModal() {
         break
         
       case 'department':
-        if (editingItem.value) {
+        if (editingItem.value && editingItem.value.id) {
+          // Debug the department ID before update
+          console.log('Updating department with ID:', editingItem.value.id);
+          
           success = await settingsStore.updateDepartment(
             editingItem.value.id, 
             modalFormData.name, 
             modalFormData.frequent
           )
         } else {
+          // Debug when adding department
+          console.log('Adding new department to building:', modalFormData.buildingId);
+          
           success = await settingsStore.addDepartment(
             modalFormData.buildingId,
             modalFormData.name,
