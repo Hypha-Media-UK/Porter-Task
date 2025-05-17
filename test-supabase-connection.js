@@ -1,59 +1,34 @@
-/**
- * Test Supabase Connection and Database Setup
- * 
- * This script tests the connection to the Supabase database,
- * runs the database initialization, and ensures all required
- * data structures are in place.
- * 
- * Usage:
- *   node test-supabase-connection.js
- */
+import { createClient } from '@supabase/supabase-js'
 
-// Load environment variables
-import 'dotenv/config';
-import { createClient } from '@supabase/supabase-js';
+// Use the credentials provided in the requirements
+const supabaseUrl = 'https://scyavdsrkqopnucwmqui.supabase.co'
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjeWF2ZHNya3FvcG51Y3dtcXVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDc0ODU2MjMsImV4cCI6MjA2MzA2MTYyM30.cLys3-wskwTGnQ3k_aEt_vm8DxxaTX6LWOclgoB-DEA'
 
-// Initialize Supabase client with the provided credentials
-const supabaseUrl = process.env.SUPABASE_URL || 'https://qhetbddcmbljmirrkaac.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFoZXRiZGRjbWJsam1pcnJrYWFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDcxMzQ2MzYsImV4cCI6MjA2MjcxMDYzNn0.R1xJDIQHl8G-t4uYDH8pDwlLd7pJCwqtWMvplaJxUmA';
+// Create Supabase client
+const supabase = createClient(supabaseUrl, supabaseKey)
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase credentials in environment variables');
-  process.exit(1);
-}
-
-console.log('Supabase URL:', supabaseUrl);
-console.log('Using provided Supabase credentials');
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Test functions
 async function testConnection() {
+  console.log('Testing Supabase connection...')
+  
   try {
-    console.log('\n1. Testing Supabase connection...');
-    const { data, error } = await supabase.from('settings').select('*').limit(1);
+    // Try to get the PostgreSQL version (simple query that should work)
+    const { data, error } = await supabase.rpc('get_pg_version')
     
     if (error) {
-      console.error('Connection failed:', error);
-      return false;
+      console.error('Error connecting to Supabase:', error)
+      return false
     }
     
-    console.log('Connection successful!');
-    console.log(`Retrieved settings data: ${JSON.stringify(data)}`);
-    return true;
-  } catch (error) {
-    console.error('Connection test failed with exception:', error);
-    return false;
-  }
-}
-
-async function checkTables() {
-  try {
-    console.log('\n2. Checking required tables...');
+    console.log('✅ Successfully connected to Supabase!')
+    console.log('PostgreSQL version:', data)
     
-    // List of all required tables
-    const requiredTables = [
-      'settings',
+    // Check if tables exist
+    console.log('\nChecking for existing tables...')
+    const tables = [
+      'shifts',
+      'tasks',
+      'porter_assignments',
+      'shift_assigned_porters',
       'supervisors',
       'porters',
       'buildings',
@@ -61,113 +36,37 @@ async function checkTables() {
       'job_categories',
       'job_category_defaults',
       'designation_departments',
-      'shifts',
-      'tasks',
-      'porter_assignments',
-      'shift_assigned_porters'
-    ];
+      'settings'
+    ]
     
-    // Test each table with a simple query
-    const results = await Promise.all(
-      requiredTables.map(async (table) => {
-        try {
-          const { data, error } = await supabase
-            .from(table)
-            .select('*')
-            .limit(1);
-          
-          if (error) {
-            console.error(`Table '${table}' error:`, error);
-            return { table, exists: false, error: error.message };
-          }
-          
-          return { 
-            table, 
-            exists: true, 
-            count: Array.isArray(data) ? data.length : 0 
-          };
-        } catch (err) {
-          console.error(`Error checking table '${table}':`, err);
-          return { table, exists: false, error: err.message };
-        }
-      })
-    );
-    
-    // Print results
-    console.log('Table check results:');
-    results.forEach(result => {
-      if (result.exists) {
-        console.log(`✅ ${result.table} - exists${result.count > 0 ? ` (contains data)` : ''}`);
+    for (const table of tables) {
+      const { count, error: tableError } = await supabase
+        .from(table)
+        .select('*', { count: 'exact', head: true })
+      
+      if (tableError) {
+        console.log(`❌ Table '${table}' does not exist or cannot be accessed: ${tableError.message}`)
       } else {
-        console.log(`❌ ${result.table} - error: ${result.error}`);
+        console.log(`✅ Table '${table}' exists with ${count} rows`)
       }
-    });
+    }
     
-    // Return true if all tables exist
-    return results.every(r => r.exists);
+    return true
   } catch (error) {
-    console.error('Table check failed with exception:', error);
-    return false;
+    console.error('Unexpected error testing Supabase connection:', error)
+    return false
   }
 }
 
-async function checkJobCategoryDefaults() {
-  try {
-    console.log('\n3. Checking job category defaults...');
-    
-    const { data, error } = await supabase
-      .from('job_category_defaults')
-      .select('*');
-    
-    if (error) {
-      console.error('Error querying job category defaults:', error);
-      return false;
-    }
-    
-    if (data && data.length > 0) {
-      console.log(`Found ${data.length} job category defaults:`);
-      data.forEach(def => {
-        console.log(`- ${def.category}${def.item_type ? ' (' + def.item_type + ')' : ''}: ` + 
-          `from ${def.from_building_id || 'any'} / ${def.from_location_id || 'any'} ` + 
-          `to ${def.to_building_id || 'any'} / ${def.to_location_id || 'any'}`);
-      });
+// Run the test
+testConnection()
+  .then(success => {
+    if (success) {
+      console.log('\n✅ Supabase connection test completed successfully')
     } else {
-      console.log('No job category defaults found');
+      console.log('\n❌ Supabase connection test failed')
     }
-    
-    return true;
-  } catch (error) {
-    console.error('Job category defaults check failed with exception:', error);
-    return false;
-  }
-}
-
-// Main function
-async function main() {
-  console.log('Starting Supabase connection test...');
-  
-  // Test 1: Basic connection
-  const connected = await testConnection();
-  if (!connected) {
-    console.error('\nFailed to connect to Supabase. Please check your credentials.');
-    process.exit(1);
-  }
-  
-  // Test 2: Check tables
-  const tablesExist = await checkTables();
-  if (!tablesExist) {
-    console.warn('\nSome tables may not exist or cannot be accessed.');
-    // Continue anyway
-  }
-  
-  // Test 3: Check job category defaults
-  await checkJobCategoryDefaults();
-  
-  console.log('\nConnection tests completed.');
-}
-
-// Run the tests
-main().catch(error => {
-  console.error('Testing failed with exception:', error);
-  process.exit(1);
-});
+  })
+  .catch(err => {
+    console.error('Error running test:', err)
+  })
