@@ -47,19 +47,19 @@
           <div class="task-info">
             <div class="task-header">
               <div class="task-type">{{ task.jobCategory }} - {{ task.itemType }}</div>
-              <div class="task-time">{{ task.receivedTime }}</div>
+              <div class="task-time">{{ formatDateTime(task.receivedTime) }}</div>
             </div>
             <div class="task-journey">
-              <span class="from-location">{{ task.fromLocation }}</span>
+              <span class="from-location">{{ task.fromLocation.displayName }}</span>
               <span class="journey-arrow">→</span>
-              <span class="to-location">{{ task.toLocation }}</span>
+              <span class="to-location">{{ task.toLocation.displayName }}</span>
             </div>
             <div class="task-footer">
               <span v-if="task.allocatedStaff" class="allocated-staff">
                 Assigned to: {{ task.allocatedStaff }}
               </span>
               <span v-if="task.status === 'Completed'" class="completion-time">
-                Completed at: {{ task.completedTime }}
+                Completed at: {{ formatDateTime(task.completedTime) }}
               </span>
             </div>
           </div>
@@ -70,70 +70,80 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useTaskStore } from '@/stores/taskStore'
+import { useShiftStore } from '@/stores/shiftStore'
+import type { Task } from '@/types'
 
 // Router
 const router = useRouter()
 
-// Placeholder data (will come from stores)
-const isLoading = ref(false)
-const activeTab = ref('pending')
+// Stores
+const taskStore = useTaskStore()
+const shiftStore = useShiftStore()
 
-// Placeholder tasks
-const tasks = ref([
-  {
-    id: '1',
-    jobCategory: 'Patient Transport',
-    itemType: 'Wheelchair',
-    fromLocation: 'Ward A1',
-    toLocation: 'X-Ray Department',
-    status: 'Pending',
-    receivedTime: '09:30',
-    allocatedTime: '09:35',
-    allocatedStaff: 'John Porter'
-  },
-  {
-    id: '2',
-    jobCategory: 'Specimen Delivery',
-    itemType: 'Blood Sample',
-    fromLocation: 'Ward B2',
-    toLocation: 'Pathology',
-    status: 'Completed',
-    receivedTime: '10:15',
-    allocatedTime: '10:20',
-    completedTime: '10:45',
-    allocatedStaff: 'Sarah Porter'
-  }
-])
+// State
+const activeTab = ref('pending')
+const error = ref<string | null>(null)
 
 // Computed properties
+const isLoading = computed(() => taskStore.isLoading)
+
 const pendingTasksCount = computed(() => {
-  return tasks.value.filter(task => task.status === 'Pending').length
+  return taskStore.pendingTasks.length
 })
 
 const completedTasksCount = computed(() => {
-  return tasks.value.filter(task => task.status === 'Completed').length
+  return taskStore.completedTasks.length
 })
 
 const filteredTasks = computed(() => {
-  return tasks.value.filter(task => {
-    if (activeTab.value === 'pending') {
-      return task.status === 'Pending'
-    } else {
-      return task.status === 'Completed'
-    }
-  })
+  return activeTab.value === 'pending' ? taskStore.pendingTasks : taskStore.completedTasks
 })
 
 // Methods
 const openNewTaskForm = () => {
+  if (!shiftStore.currentShift) {
+    alert('You must start a shift before creating tasks')
+    return
+  }
+  
   router.push('/task-form')
 }
 
 const editTask = (taskId: string) => {
   router.push(`/task-form/${taskId}`)
 }
+
+function formatDateTime(isoString: string | undefined): string {
+  if (!isoString) return ''
+  const date = new Date(isoString)
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+}
+
+// Load tasks on component mount
+onMounted(async () => {
+  // Load shift data if not already loaded
+  if (!shiftStore.currentShift) {
+    await shiftStore.loadShiftData()
+  }
+  
+  // Load tasks for the current shift
+  if (shiftStore.currentShift) {
+    await taskStore.loadTasks(shiftStore.currentShift.id)
+  }
+})
+
+// When the current shift changes, reload tasks
+watch(() => shiftStore.currentShift, async (newShift) => {
+  if (newShift) {
+    await taskStore.loadTasks(newShift.id)
+  } else {
+    // Clear tasks if no shift is active
+    taskStore.tasks = []
+  }
+})
 </script>
 
 <style scoped>

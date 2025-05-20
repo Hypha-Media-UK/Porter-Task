@@ -65,32 +65,83 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useShiftStore } from '@/stores/shiftStore'
+import { useSettingsStore } from '@/stores/settingsStore'
+import type { ShiftType } from '@/types'
 
 // Router
 const router = useRouter()
 
-// Placeholder data (will come from stores)
-const isLoading = ref(false)
-const isShiftActive = ref(false)
+// Stores
+const shiftStore = useShiftStore()
+const settingsStore = useSettingsStore()
+
+// State
+const isLoading = computed(() => shiftStore.isLoading || settingsStore.isLoading)
+const isShiftActive = computed(() => !!shiftStore.currentShift)
 const supervisor = ref('')
-const supervisors = ref(['John Doe', 'Jane Smith', 'Mike Johnson'])
-const shiftType = ref('Day')
-const startTime = ref('08:00')
-const formattedDate = ref('May 17, 2025')
+const error = ref<string | null>(null)
+
+// Computed properties
+const supervisors = computed(() => settingsStore.supervisors)
+
+const shiftType = computed(() => {
+  return shiftStore.currentShift?.type || ''
+})
+
+const startTime = computed(() => {
+  if (!shiftStore.currentShift?.startTime) return ''
+  const date = new Date(shiftStore.currentShift.startTime)
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
+})
+
+const formattedDate = computed(() => {
+  if (!shiftStore.currentShift?.date) return ''
+  const date = new Date(shiftStore.currentShift.date)
+  return date.toLocaleDateString('en-GB', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+})
 
 // Methods
-const startShift = (type: 'Day' | 'Night') => {
-  // Will implement actual shift starting with store
-  isShiftActive.value = true
-  shiftType.value = type
-  router.push('/tasks')
+const startShift = async (type: ShiftType) => {
+  if (!supervisor.value) {
+    error.value = 'Please select a supervisor'
+    return
+  }
+  
+  try {
+    await shiftStore.startShift(type, supervisor.value)
+    router.push('/tasks')
+  } catch (err) {
+    if (err instanceof Error) {
+      error.value = err.message
+      alert(error.value)
+    } else {
+      error.value = 'Failed to start shift'
+      alert(error.value)
+    }
+  }
 }
 
 const openShift = () => {
   router.push('/tasks')
 }
+
+// Initialize data
+onMounted(async () => {
+  // Load settings if not already loaded
+  if (!settingsStore.supervisors.length) {
+    await settingsStore.initialize()
+  }
+  
+  // Load shift data
+  await shiftStore.loadShiftData()
+})
 </script>
 
 <style scoped>

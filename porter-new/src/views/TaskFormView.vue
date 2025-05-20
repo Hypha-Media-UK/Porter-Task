@@ -182,50 +182,31 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useTaskStore } from '@/stores/taskStore';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { useShiftStore } from '@/stores/shiftStore';
+import type { TaskStatus } from '@/types';
 
 // Router
-const router = useRouter()
-const route = useRoute()
+const router = useRouter();
+const route = useRoute();
+
+// Stores
+const taskStore = useTaskStore();
+const settingsStore = useSettingsStore();
+const shiftStore = useShiftStore();
 
 // Props
 const props = defineProps<{
   taskId?: string;
-}>()
+}>();
 
 // State
-const isLoading = ref(false)
-const isEditing = computed(() => !!props.taskId)
-
-// Mock data for the form
-const jobCategories = ref(['Patient Transport', 'Specimen Delivery', 'Equipment', 'General'])
-const jobItems = ref({
-  'Patient Transport': ['Wheelchair', 'Stretcher', 'Bed'],
-  'Specimen Delivery': ['Blood Sample', 'Urine Sample', 'Other Specimen'],
-  'Equipment': ['Oxygen Cylinder', 'IV Stand', 'Monitor', 'Other'],
-  'General': ['Generic Task']
-})
-const porters = ref(['John Porter', 'Sarah Porter', 'Mike Handler', 'Emma Rodriguez'])
-const buildings = ref([
-  {
-    id: 'b1',
-    name: 'Main Hospital',
-    departments: [
-      { id: 'd1', name: 'Accident and Emergency', frequent: true },
-      { id: 'd2', name: 'Outpatients', frequent: true },
-      { id: 'd3', name: 'Medical Records', frequent: false }
-    ]
-  },
-  {
-    id: 'b2',
-    name: 'New Fountain House',
-    departments: [
-      { id: 'd4', name: 'Pathology', frequent: true },
-      { id: 'd5', name: 'Pharmacy', frequent: false }
-    ]
-  }
-])
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const isEditing = computed(() => !!props.taskId);
 
 // Initialize form data
 const formData = ref({
@@ -237,117 +218,205 @@ const formData = ref({
   receivedTime: getCurrentTime(),
   allocatedTime: getCurrentTime(),
   completedTime: '',
-  status: 'Pending'
-})
+  status: 'Pending' as TaskStatus
+});
 
-// Computed properties
+// Computed properties from stores
+const jobCategories = computed(() => {
+  return Object.keys(settingsStore.jobCategories);
+});
+
 const itemTypesForCategory = computed(() => {
-  return jobItems.value[formData.value.jobCategory as keyof typeof jobItems.value] || []
-})
+  if (!formData.value.jobCategory) return [];
+  return settingsStore.jobCategories[formData.value.jobCategory] || [];
+});
 
 const allLocations = computed(() => {
-  const locations = []
-  for (const building of buildings.value) {
-    for (const dept of building.departments) {
-      locations.push({
-        id: dept.id,
-        name: dept.name,
-        buildingId: building.id,
-        buildingName: building.name,
-        frequent: dept.frequent
-      })
+  return settingsStore.sortedDepartments;
+});
+
+const porters = computed(() => {
+  if (!shiftStore.currentShift) return settingsStore.porters;
+  return shiftStore.currentShift.assignedPorters;
+});
+
+// Watch for changes to job category and apply default locations
+watch(() => [formData.value.jobCategory, formData.value.itemType], async ([category, itemType]) => {
+  if (!category) return;
+  
+  // Check if we have default locations for this category/item
+  const defaultLocation = settingsStore.getJobCategoryDefault(category, itemType);
+  
+  if (defaultLocation) {
+    console.log('Found default locations:', defaultLocation);
+    
+    // Apply defaults if they exist
+    if (defaultLocation.fromLocationId) {
+      formData.value.fromLocation = defaultLocation.fromLocationId;
+    }
+    
+    if (defaultLocation.toLocationId) {
+      formData.value.toLocation = defaultLocation.toLocationId;
     }
   }
-  
-  // Sort so frequent locations appear first
-  return locations.sort((a, b) => {
-    if (a.frequent && !b.frequent) return -1
-    if (!a.frequent && b.frequent) return 1
-    return a.name.localeCompare(b.name)
-  })
-})
+}, { immediate: true });
 
 // Helper functions
 function getCurrentTime() {
-  const now = new Date()
-  const hours = now.getHours().toString().padStart(2, '0')
-  const minutes = now.getMinutes().toString().padStart(2, '0')
-  return `${hours}:${minutes}`
+  const now = new Date();
+  const hours = now.getHours().toString().padStart(2, '0');
+  const minutes = now.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes}`;
 }
 
 function getBuildingName(locationId: string) {
-  const location = allLocations.value.find(loc => loc.id === locationId)
-  return location ? location.buildingName : ''
+  const location = allLocations.value.find(loc => loc.id === locationId);
+  return location ? location.buildingName : '';
+}
+
+function formatTime(isoString: string): string {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 }
 
 // Load task data if editing
-function loadTaskData() {
-  if (!props.taskId) return
+async function loadTaskData() {
+  if (!props.taskId) return;
   
-  isLoading.value = true
+  isLoading.value = true;
+  error.value = null;
   
-  // In a real app, this would fetch from a store or API
-  setTimeout(() => {
-    // Mock data for an existing task
-    formData.value = {
-      jobCategory: 'Patient Transport',
-      itemType: 'Wheelchair',
-      fromLocation: 'd1', // A&E
-      toLocation: 'd2',   // Outpatients
-      allocatedStaff: 'John Porter',
-      receivedTime: '09:30',
-      allocatedTime: '09:35',
-      completedTime: '',
-      status: 'Pending'
+  try {
+    const task = await taskStore.getTask(props.taskId);
+    
+    if (!task) {
+      throw new Error('Task not found');
     }
     
-    isLoading.value = false
-  }, 500)
+    formData.value = {
+      jobCategory: task.jobCategory,
+      itemType: task.itemType,
+      fromLocation: task.fromLocation.locationId,
+      toLocation: task.toLocation.locationId,
+      allocatedStaff: task.allocatedStaff || '',
+      receivedTime: formatTime(task.receivedTime),
+      allocatedTime: formatTime(task.allocatedTime),
+      completedTime: task.completedTime ? formatTime(task.completedTime) : '',
+      status: task.status
+    };
+  } catch (err) {
+    if (err instanceof Error) {
+      error.value = err.message;
+    } else {
+      error.value = 'Failed to load task data';
+    }
+    console.error('Error loading task:', err);
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 // Methods
-function saveWithStatus(status: 'Pending' | 'Completed') {
-  formData.value.status = status
+function saveWithStatus(status: TaskStatus) {
+  formData.value.status = status;
   
   // If completing a task, set the completed time to now
   if (status === 'Completed' && !formData.value.completedTime) {
-    formData.value.completedTime = getCurrentTime()
+    formData.value.completedTime = getCurrentTime();
   }
   
-  saveTask()
+  saveTask();
 }
 
-function saveTask() {
-  // In a real app, this would save to a store or API
-  console.log('Saving task:', formData.value)
+async function saveTask() {
+  if (!shiftStore.currentShift) {
+    error.value = 'No active shift. Cannot save task.';
+    return;
+  }
   
-  // Simulate a short delay
-  isLoading.value = true
+  isLoading.value = true;
+  error.value = null;
   
-  setTimeout(() => {
-    isLoading.value = false
-    router.push('/tasks')
-  }, 500)
+  try {
+    if (isEditing.value && props.taskId) {
+      // Update existing task
+      const success = await taskStore.updateTask(props.taskId, formData.value);
+      
+      if (!success) {
+        throw new Error('Failed to update task');
+      }
+    } else {
+      // Create new task
+      const newTask = await taskStore.createTask(formData.value);
+      
+      if (!newTask) {
+        throw new Error('Failed to create task');
+      }
+    }
+    
+    // Navigate back to tasks view
+    router.push('/tasks');
+  } catch (err) {
+    if (err instanceof Error) {
+      error.value = err.message;
+    } else {
+      error.value = 'An error occurred while saving the task';
+    }
+    console.error('Error saving task:', err);
+  } finally {
+    isLoading.value = false;
+  }
 }
 
-function confirmDeleteTask() {
+async function confirmDeleteTask() {
+  if (!props.taskId) return;
+  
   if (confirm('Are you sure you want to delete this task?')) {
-    // In a real app, this would delete from a store or API
-    console.log('Deleting task:', props.taskId)
-    router.push('/tasks')
+    isLoading.value = true;
+    error.value = null;
+    
+    try {
+      const success = await taskStore.deleteTask(props.taskId);
+      
+      if (!success) {
+        throw new Error('Failed to delete task');
+      }
+      
+      router.push('/tasks');
+    } catch (err) {
+      if (err instanceof Error) {
+        error.value = err.message;
+      } else {
+        error.value = 'An error occurred while deleting the task';
+      }
+      console.error('Error deleting task:', err);
+    } finally {
+      isLoading.value = false;
+    }
   }
 }
 
 function cancel() {
-  router.back()
+  router.back();
 }
 
-// Initialize the component
-onMounted(() => {
-  if (isEditing.value) {
-    loadTaskData()
+  // Initialize the component
+onMounted(async () => {
+  // Initialize settings store if not already initialized
+  if (!settingsStore.buildings.length) {
+    await settingsStore.initialize();
   }
-})
+  
+  // Load current shift if not already loaded
+  if (!shiftStore.currentShift) {
+    await shiftStore.loadShiftData();
+  }
+  
+  if (isEditing.value) {
+    await loadTaskData();
+  }
+});
 </script>
 
 <style scoped>

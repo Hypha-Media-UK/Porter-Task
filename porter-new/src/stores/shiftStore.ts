@@ -187,18 +187,40 @@ export const useShiftStore = defineStore('shift', () => {
     error.value = null
     
     try {
+      console.log(`Starting new ${type} shift for supervisor: ${supervisor}`)
+      
+      // First, verify that the supervisor exists
+      const { data: supervisorExists, error: supervisorError } = await supabase
+        .from('supervisors')
+        .select('id')
+        .eq('name', supervisor)
+        .maybeSingle()
+      
+      if (supervisorError) {
+        console.error('Error checking supervisor:', supervisorError)
+        throw new Error(`Error checking supervisor: ${supervisorError.message}`)
+      }
+      
+      if (!supervisorExists) {
+        console.error('Supervisor not found:', supervisor)
+        throw new Error(`Supervisor "${supervisor}" not found. Please select a valid supervisor.`)
+      }
+      
+      console.log('Supervisor verified, creating shift...')
+      
       const now = new Date()
       const date = now.toISOString().split('T')[0] // YYYY-MM-DD
       
-      const newShift: SupabaseShift = {
-        id: generateId(),
+      // Simplify the shift object to reduce potential issues
+      const newShift = {
         date,
         type,
         supervisor,
         start_time: now.toISOString(),
-        end_time: null,
-        created_at: now.toISOString()
+        end_time: null
       }
+      
+      console.log('Sending shift data to Supabase:', newShift)
       
       const { data, error: insertError } = await supabase
         .from('shifts')
@@ -206,7 +228,12 @@ export const useShiftStore = defineStore('shift', () => {
         .select()
         .single()
       
-      if (insertError) throw insertError
+      if (insertError) {
+        console.error('Supabase insert error:', insertError)
+        throw new Error(`Failed to create shift: ${insertError.message}`)
+      }
+      
+      console.log('Shift created successfully:', data)
       
       const shift = transformShiftFromSupabase(data)
       shift.tasks = []
